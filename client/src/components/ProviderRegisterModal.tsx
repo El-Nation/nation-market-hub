@@ -111,13 +111,13 @@ export const ProviderRegisterModal: React.FC<ProviderRegisterModalProps> = ({ is
                     </div>
                 ) : (
                     <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                            <UserCheck size={28} style={{ color: '#0284c7' }} />
-                            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a' }}>Join as a Service Provider</h2>
+                        <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+                            <img src="/logo.png" alt="Nation Market Hub" style={{ height: '48px', width: 'auto', marginBottom: '0.5rem' }} />
+                            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Join as a Service Provider</h2>
+                            <p style={{ color: '#64748b', fontSize: '0.88rem', marginTop: '0.25rem' }}>
+                                Register your skill or business to reach thousands of customers across Benin City and beyond.
+                            </p>
                         </div>
-                        <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-                            Register your skill or business to reach thousands of customers across Benin City and beyond.
-                        </p>
 
                         {error && (
                             <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.88rem' }}>

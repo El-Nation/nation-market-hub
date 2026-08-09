@@ -52,9 +52,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
                 </button>
 
                 <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                    <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: '#f0fdf4', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem', color: '#16a34a' }}>
-                        <Shield size={28} />
-                    </div>
+                    <img src="/logo.png" alt="Nation Market Hub" style={{ height: '48px', width: 'auto', marginBottom: '0.5rem' }} />
                     <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a' }}>Admin Backoffice Portal</h2>
                     <p style={{ color: '#64748b', fontSize: '0.85rem' }}>Nation Market Hub Administration</p>
                 </div>

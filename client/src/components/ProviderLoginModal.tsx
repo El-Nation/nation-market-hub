@@ -58,13 +58,13 @@ export const ProviderLoginModal: React.FC<ProviderLoginModalProps> = ({
                     <X size={18} />
                 </button>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
-                    <LogIn size={26} style={{ color: '#0284c7' }} />
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a' }}>Provider Login</h2>
+                <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+                    <img src="/logo.png" alt="Nation Market Hub" style={{ height: '48px', width: 'auto', marginBottom: '0.5rem' }} />
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Provider Login</h2>
+                    <p style={{ color: '#64748b', fontSize: '0.88rem', marginTop: '0.25rem' }}>
+                        Log in to view customer service requests and manage your provider profile.
+                    </p>
                 </div>
-                <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-                    Log in to view customer service requests and manage your provider profile.
-                </p>
 
                 {error && (
                     <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.88rem' }}>

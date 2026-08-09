@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Provider } from '../types';
-import { Store, UserCheck, LogIn, LayoutDashboard, LogOut, Shield } from 'lucide-react';
+import { UserCheck, LogIn, LayoutDashboard, LogOut, Shield } from 'lucide-react';
 
 interface HeaderProps {
     currentProvider: Provider | null;
@@ -49,9 +49,11 @@ export const Header: React.FC<HeaderProps> = ({
                     }}
                     style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}
                 >
-                    <div style={{ background: 'var(--accent-gradient)', padding: '0.5rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(2, 132, 199, 0.25)' }}>
-                        <Store size={22} color="#ffffff" strokeWidth={2.5} />
-                    </div>
+                    <img 
+                        src="/logo.png" 
+                        alt="Nation Market Hub Logo" 
+                        style={{ height: '42px', width: 'auto', objectFit: 'contain' }} 
+                    />
                     <div>
                         <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0, lineHeight: 1.2 }}>
                             Nation Market <span className="gradient-text">Hub</span>

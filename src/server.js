@@ -6,6 +6,11 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const db = require("./config/db");
+const { 
+    sendEnquiryNotificationToProvider, 
+    sendStatusUpdateNotificationToCustomer,
+    sendEnquiryConfirmationToCustomer 
+} = require("./utils/mailer");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -406,7 +411,7 @@ app.post("/api/enquiries", async (req, res) => {
 
     try {
         // Verify target provider exists and is approved
-        const providerCheck = await db.query("SELECT id, full_name, business_name FROM provider_profiles WHERE id = $1 AND status = 'approved';", [provider_id]);
+        const providerCheck = await db.query("SELECT id, full_name, email, phone, business_name FROM provider_profiles WHERE id = $1 AND status = 'approved';", [provider_id]);
         if (providerCheck.rows.length === 0) {
             return res.status(404).json({
                 success: false,
@@ -434,12 +439,39 @@ app.post("/api/enquiries", async (req, res) => {
         ];
 
         const result = await db.query(insertQuery, queryValues);
+        const newEnquiry = result.rows[0];
+        const targetProvider = providerCheck.rows[0];
+
+        // Asynchronously dispatch email notification to provider
+        sendEnquiryNotificationToProvider({
+            providerEmail: targetProvider.email,
+            providerName: targetProvider.full_name,
+            businessName: targetProvider.business_name,
+            customerName: newEnquiry.customer_name,
+            customerPhone: newEnquiry.customer_phone,
+            customerEmail: newEnquiry.customer_email,
+            location: newEnquiry.location,
+            serviceDescription: newEnquiry.service_description,
+        }).catch((err) => console.error("Async provider email dispatch error:", err));
+
+        // Asynchronously dispatch confirmation email to customer
+        if (newEnquiry.customer_email) {
+            sendEnquiryConfirmationToCustomer({
+                customerEmail: newEnquiry.customer_email,
+                customerName: newEnquiry.customer_name,
+                businessName: targetProvider.business_name,
+                providerName: targetProvider.full_name,
+                providerPhone: targetProvider.phone,
+                location: newEnquiry.location,
+                serviceDescription: newEnquiry.service_description,
+            }).catch((err) => console.error("Async customer confirmation email dispatch error:", err));
+        }
 
         res.status(201).json({
             success: true,
             message: "Your service request has been sent to the provider successfully!",
-            data: result.rows[0],
-            provider: providerCheck.rows[0],
+            data: newEnquiry,
+            provider: targetProvider,
         });
     } catch (error) {
         console.error("Error submitting customer enquiry:", error.message);
@@ -491,7 +523,10 @@ app.patch("/api/enquiries/:id/status", authenticateToken, requireRole("provider"
     }
 
     try {
-        const updateQuery = "UPDATE service_enquiries SET status = $1 WHERE id = $2 RETURNING *;";
+        const updateQuery = `
+            UPDATE service_enquiries SET status = $1 WHERE id = $2 
+            RETURNING *;
+        `;
         const result = await db.query(updateQuery, [status, id]);
 
         if (result.rows.length === 0) {
@@ -501,10 +536,31 @@ app.patch("/api/enquiries/:id/status", authenticateToken, requireRole("provider"
             });
         }
 
+        const updatedEnquiry = result.rows[0];
+
+        // Fetch provider business info for customer status notification
+        const providerQuery = await db.query(
+            "SELECT business_name, phone as provider_phone FROM provider_profiles WHERE id = $1;",
+            [updatedEnquiry.provider_id]
+        );
+        const providerInfo = providerQuery.rows[0] || {};
+
+        // Asynchronously dispatch status update email to customer
+        if (updatedEnquiry.customer_email) {
+            sendStatusUpdateNotificationToCustomer({
+                customerEmail: updatedEnquiry.customer_email,
+                customerName: updatedEnquiry.customer_name,
+                businessName: providerInfo.business_name,
+                providerPhone: providerInfo.provider_phone,
+                status: updatedEnquiry.status,
+                serviceDescription: updatedEnquiry.service_description,
+            }).catch((err) => console.error("Async customer status email dispatch error:", err));
+        }
+
         res.json({
             success: true,
             message: `Enquiry status updated to ${status}`,
-            data: result.rows[0],
+            data: updatedEnquiry,
         });
     } catch (error) {
         console.error("Error updating enquiry status:", error.message);

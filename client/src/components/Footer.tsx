@@ -1,5 +1,5 @@
 import React from 'react';
-import { Store, Mail, Phone } from 'lucide-react';
+import { Mail, Phone } from 'lucide-react';
 
 export const Footer: React.FC = () => {
     return (
@@ -7,8 +7,8 @@ export const Footer: React.FC = () => {
             <div className="container">
                 <div className="footer-grid">
                     <div>
-                        <a href="/" className="logo">
-                            <Store size={24} style={{ color: '#38bdf8' }} />
+                        <a href="/" className="logo" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <img src="/logo.png" alt="Nation Market Hub Logo" style={{ height: '36px', width: 'auto' }} />
                             <span>Nation<span className="gradient-text">Market</span>Hub</span>
                         </a>
                         <p className="footer-brand-desc">
@@ -60,7 +60,7 @@ export const Footer: React.FC = () => {
                 </div>
 
                 <div className="footer-bottom">
-                    <p>© 2026 Nation Market Hub. All rights reserved.</p>
+                    <p style={{ fontWeight: 600 }}>2026 @nation-market hub reserved</p>
                 </div>
             </div>
         </footer>
