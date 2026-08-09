@@ -55,6 +55,16 @@ CREATE TABLE IF NOT EXISTS service_enquiries (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Provider Reviews Table (Customer Feedback & Ratings)
+CREATE TABLE IF NOT EXISTS provider_reviews (
+    id SERIAL PRIMARY KEY,
+    provider_id INT NOT NULL REFERENCES provider_profiles(id) ON DELETE CASCADE,
+    customer_name VARCHAR(150) NOT NULL,
+    rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    review_text TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance when searching and filtering
 CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
 CREATE INDEX IF NOT EXISTS idx_services_slug ON services(slug);
@@ -64,4 +74,5 @@ CREATE INDEX IF NOT EXISTS idx_providers_status ON provider_profiles(status);
 CREATE INDEX IF NOT EXISTS idx_providers_location ON provider_profiles(location);
 CREATE INDEX IF NOT EXISTS idx_enquiries_provider_id ON service_enquiries(provider_id);
 CREATE INDEX IF NOT EXISTS idx_enquiries_status ON service_enquiries(status);
+CREATE INDEX IF NOT EXISTS idx_reviews_provider_id ON provider_reviews(provider_id);
 

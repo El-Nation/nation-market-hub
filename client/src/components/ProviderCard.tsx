@@ -28,6 +28,9 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({ provider, onViewProf
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: '#fef3c7', color: '#b45309', padding: '0.2rem 0.5rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700 }}>
                             <Star size={14} fill="#d97706" color="#d97706" />
                             {provider.rating}
+                            <span style={{ fontWeight: 500, color: '#92400e', fontSize: '0.75rem', marginLeft: '0.15rem' }}>
+                                ({provider.review_count ?? 0})
+                            </span>
                         </div>
                     </div>
                     {provider.business_name && (

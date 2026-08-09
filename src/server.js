@@ -143,10 +143,13 @@ app.get("/api/providers", async (req, res) => {
                 p.category_id, p.services_offered, p.bio, p.experience_years, 
                 p.location, p.rating, p.status, p.avatar_url, p.created_at,
                 c.name as category_name, 
-                c.slug as category_slug
+                c.slug as category_slug,
+                COUNT(r.id)::int as review_count
             FROM provider_profiles p
             JOIN categories c ON p.category_id = c.id
+            LEFT JOIN provider_reviews r ON p.id = r.provider_id
             ${whereClause}
+            GROUP BY p.id, c.id
             ORDER BY p.rating DESC, p.created_at DESC;
         `;
 
@@ -433,6 +436,93 @@ app.patch("/api/enquiries/:id/status", async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Server error updating enquiry status",
+        });
+    }
+});
+
+// GET /api/providers/:id/reviews - Fetch all reviews for a provider
+app.get("/api/providers/:id/reviews", async (req, res) => {
+    const { id } = req.params;
+    try {
+        const queryText = `
+            SELECT * FROM provider_reviews 
+            WHERE provider_id = $1 
+            ORDER BY created_at DESC;
+        `;
+        const result = await db.query(queryText, [id]);
+        res.json({
+            success: true,
+            count: result.rows.length,
+            data: result.rows,
+        });
+    } catch (error) {
+        console.error("Error fetching provider reviews:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Server error fetching provider reviews",
+        });
+    }
+});
+
+// POST /api/providers/:id/reviews - Submit customer review and recalculate provider rating
+app.post("/api/providers/:id/reviews", async (req, res) => {
+    const { id } = req.params;
+    const { customer_name, rating, review_text } = req.body;
+
+    if (!customer_name || !rating || !review_text) {
+        return res.status(400).json({
+            success: false,
+            message: "Please fill in all required fields (Your Name, Rating, Review Text).",
+        });
+    }
+
+    const numericRating = parseInt(rating, 10);
+    if (isNaN(numericRating) || numericRating < 1 || numericRating > 5) {
+        return res.status(400).json({
+            success: false,
+            message: "Rating must be a number between 1 and 5.",
+        });
+    }
+
+    try {
+        // Verify provider exists
+        const providerCheck = await db.query("SELECT id FROM provider_profiles WHERE id = $1;", [id]);
+        if (providerCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Provider not found.",
+            });
+        }
+
+        // Insert review
+        const insertQuery = `
+            INSERT INTO provider_reviews (provider_id, customer_name, rating, review_text) 
+            VALUES ($1, $2, $3, $4)
+            RETURNING *;
+        `;
+        const reviewResult = await db.query(insertQuery, [id, customer_name.trim(), numericRating, review_text.trim()]);
+
+        // Recalculate average rating for provider profile
+        const avgResult = await db.query(
+            "SELECT ROUND(AVG(rating)::numeric, 2) as new_rating FROM provider_reviews WHERE provider_id = $1;",
+            [id]
+        );
+        const newRating = avgResult.rows[0].new_rating || numericRating;
+
+        await db.query("UPDATE provider_profiles SET rating = $1 WHERE id = $2;", [newRating, id]);
+
+        res.status(201).json({
+            success: true,
+            message: "Thank you for your feedback! Your review has been submitted.",
+            review: reviewResult.rows[0],
+            new_provider_rating: newRating,
+        });
+    } catch (error) {
+        console.error("Error submitting review:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Server error submitting review",
+            error: error.message,
         });
     }
 });

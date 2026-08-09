@@ -351,3 +351,11 @@ VALUES
     'approved', 
     'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=300&q=80'
 );
+
+-- Insert Sample Provider Reviews
+INSERT INTO provider_reviews (provider_id, customer_name, rating, review_text) VALUES
+(1, 'Osagie Kelvin', 5, 'David fixed my complete duplex electrical wiring perfectly. Very professional and polite!'),
+(1, 'Aisha Mohammed', 5, 'Quick response when my generator breaker tripped. Highly recommend David Electrical Services.'),
+(2, 'Victor Edet', 5, 'Osas Plumbing fixed our blocked main drainage line within 2 hours. Clean work!'),
+(6, 'Grace Ighodaro', 5, 'Master Auto Repairs diagnosed my Lexus gearbox issue accurately when 3 other mechanics failed.'),
+(6, 'Blessing Amadasun', 4, 'Very knowledgeable mechanic. Fixed my Toyota suspension fast.');

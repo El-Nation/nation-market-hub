@@ -19,6 +19,16 @@ export interface Service {
     created_at?: string;
 }
 
+// TypeScript interface defining a Provider Review
+export interface Review {
+    id: number;
+    provider_id: number;
+    customer_name: string;
+    rating: number;
+    review_text: string;
+    created_at: string;
+}
+
 // TypeScript interface defining a Service Provider profile
 export interface Provider {
     id: number;
@@ -34,6 +44,7 @@ export interface Provider {
     experience_years: number;
     location: string;
     rating: number;
+    review_count?: number;
     status: 'pending' | 'approved' | 'rejected' | 'suspended';
     avatar_url: string | null;
     created_at?: string;
