@@ -6,6 +6,7 @@ interface LoginModalProps {
     onClose: () => void;
     onLoginSuccess: (role: 'admin' | 'provider' | 'customer', user: any, token: string) => void;
     onOpenRegisterModal: () => void;
+    onOpenCustomerRegisterModal?: () => void;
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({
@@ -13,6 +14,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     onClose,
     onLoginSuccess,
     onOpenRegisterModal,
+    onOpenCustomerRegisterModal,
 }) => {
     if (!isOpen) return null;
 
@@ -32,6 +34,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
             });
+
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Backend server is not running on http://localhost:5000 or returned invalid response. Please start `node src/server.js`.');
+            }
 
             const data = await response.json();
             if (!response.ok) {
@@ -118,17 +125,31 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     </button>
                 </form>
 
-                <div style={{ textAlign: 'center', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #f1f5f9', fontSize: '0.88rem', color: '#64748b' }}>
-                    Want to offer service on Nation Market Hub?{' '}
-                    <button
-                        onClick={() => {
-                            onClose();
-                            onOpenRegisterModal();
-                        }}
-                        style={{ background: 'none', border: 'none', color: '#0284c7', fontWeight: 700, cursor: 'pointer', padding: 0 }}
-                    >
-                        Join as Provider
-                    </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'center', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #f1f5f9', fontSize: '0.88rem', color: '#64748b' }}>
+                    <div>
+                        Need a Customer Account?{' '}
+                        <button
+                            onClick={() => {
+                                onClose();
+                                if (onOpenCustomerRegisterModal) onOpenCustomerRegisterModal();
+                            }}
+                            style={{ background: 'none', border: 'none', color: '#0284c7', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                        >
+                            Create Account
+                        </button>
+                    </div>
+                    <div>
+                        Are you a Service Provider?{' '}
+                        <button
+                            onClick={() => {
+                                onClose();
+                                onOpenRegisterModal();
+                            }}
+                            style={{ background: 'none', border: 'none', color: '#0284c7', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                        >
+                            Join as Provider
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

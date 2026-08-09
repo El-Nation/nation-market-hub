@@ -6,9 +6,11 @@ import { CategoryServicesModal } from './components/CategoryServicesModal';
 import { ProviderSearch } from './components/ProviderSearch';
 import { ProviderModal } from './components/ProviderModal';
 import { ProviderRegisterModal } from './components/ProviderRegisterModal';
+import { CustomerRegisterModal } from './components/CustomerRegisterModal';
 import { LoginModal } from './components/LoginModal';
 import { ProviderDashboard } from './components/ProviderDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
+import { CustomerDashboard } from './components/CustomerDashboard';
 import { ProviderCTA } from './components/ProviderCTA';
 import { Footer } from './components/Footer';
 import type { Provider, Category } from './types';
@@ -18,6 +20,7 @@ export function App() {
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
     const [modalMode, setModalMode] = useState<'profile' | 'enquiry'>('profile');
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState<boolean>(false);
+    const [isCustomerRegisterModalOpen, setIsCustomerRegisterModalOpen] = useState<boolean>(false);
     const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
     const [searchTerm, setSearchTerm] = useState<string>('');
 
@@ -28,6 +31,10 @@ export function App() {
     // Admin Authentication State
     const [currentAdmin, setCurrentAdmin] = useState<{ name: string; email: string; role: string } | null>(null);
     const [viewingAdminDashboard, setViewingAdminDashboard] = useState<boolean>(false);
+
+    // Customer Authentication State
+    const [currentCustomer, setCurrentCustomer] = useState<{ id: number; full_name: string; email: string; phone: string; location: string } | null>(null);
+    const [viewingCustomerDashboard, setViewingCustomerDashboard] = useState<boolean>(false);
 
     // Session recovery on app mount
     useEffect(() => {
@@ -48,6 +55,9 @@ export function App() {
                     } else if (data.role === 'provider') {
                         setCurrentProvider(data.user);
                         setViewingDashboard(true);
+                    } else if (data.role === 'customer') {
+                        setCurrentCustomer(data.user);
+                        setViewingCustomerDashboard(true);
                     }
                 } else {
                     localStorage.removeItem('auth_token');
@@ -84,15 +94,22 @@ export function App() {
             setViewingAdminDashboard(true);
             setCurrentProvider(null);
             setViewingDashboard(false);
+            setCurrentCustomer(null);
+            setViewingCustomerDashboard(false);
         } else if (role === 'provider') {
             setCurrentProvider(user);
             setViewingDashboard(true);
             setCurrentAdmin(null);
             setViewingAdminDashboard(false);
-        } else {
-            // Future customer role flow
-            setViewingDashboard(false);
+            setCurrentCustomer(null);
+            setViewingCustomerDashboard(false);
+        } else if (role === 'customer') {
+            setCurrentCustomer(user);
+            setViewingCustomerDashboard(true);
+            setCurrentAdmin(null);
             setViewingAdminDashboard(false);
+            setCurrentProvider(null);
+            setViewingDashboard(false);
         }
     };
 
@@ -108,6 +125,12 @@ export function App() {
         setViewingAdminDashboard(false);
     };
 
+    const handleCustomerLogout = () => {
+        localStorage.removeItem('auth_token');
+        setCurrentCustomer(null);
+        setViewingCustomerDashboard(false);
+    };
+
     return (
         <div className="app-layout" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
             <Header
@@ -116,17 +139,27 @@ export function App() {
                 onToggleDashboard={() => {
                     setViewingDashboard(!viewingDashboard);
                     setViewingAdminDashboard(false);
+                    setViewingCustomerDashboard(false);
                 }}
                 currentAdmin={currentAdmin}
                 viewingAdminDashboard={viewingAdminDashboard}
                 onToggleAdminDashboard={() => {
                     setViewingAdminDashboard(!viewingAdminDashboard);
                     setViewingDashboard(false);
+                    setViewingCustomerDashboard(false);
+                }}
+                currentCustomer={currentCustomer}
+                viewingCustomerDashboard={viewingCustomerDashboard}
+                onToggleCustomerDashboard={() => {
+                    setViewingCustomerDashboard(!viewingCustomerDashboard);
+                    setViewingDashboard(false);
+                    setViewingAdminDashboard(false);
                 }}
                 onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
                 onOpenLoginModal={() => setIsLoginModalOpen(true)}
                 onLogout={handleLogout}
                 onAdminLogout={handleAdminLogout}
+                onCustomerLogout={handleCustomerLogout}
             />
 
             <main style={{ flex: 1 }}>
@@ -134,6 +167,8 @@ export function App() {
                     <AdminDashboard admin={currentAdmin} onLogout={handleAdminLogout} />
                 ) : viewingDashboard && currentProvider ? (
                     <ProviderDashboard provider={currentProvider} onLogout={handleLogout} />
+                ) : viewingCustomerDashboard && currentCustomer ? (
+                    <CustomerDashboard customer={currentCustomer} onLogout={handleCustomerLogout} />
                 ) : (
                     <>
                         <Hero onSearch={handleHeroSearch} />
@@ -177,11 +212,19 @@ export function App() {
                 onClose={() => setIsRegisterModalOpen(false)}
             />
 
+            <CustomerRegisterModal
+                isOpen={isCustomerRegisterModalOpen}
+                onClose={() => setIsCustomerRegisterModalOpen(false)}
+                onRegisterSuccess={handleUnifiedLoginSuccess}
+                onOpenLoginModal={() => setIsLoginModalOpen(true)}
+            />
+
             <LoginModal
                 isOpen={isLoginModalOpen}
                 onClose={() => setIsLoginModalOpen(false)}
                 onLoginSuccess={handleUnifiedLoginSuccess}
                 onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
+                onOpenCustomerRegisterModal={() => setIsCustomerRegisterModalOpen(true)}
             />
         </div>
     );

@@ -42,10 +42,23 @@ CREATE TABLE provider_profiles (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Customers Table
+CREATE TABLE IF NOT EXISTS customers (
+    id SERIAL PRIMARY KEY,
+    full_name VARCHAR(120) NOT NULL,
+    email VARCHAR(120) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    phone VARCHAR(30) NOT NULL,
+    location VARCHAR(100) NOT NULL DEFAULT 'Benin City',
+    avatar_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Service Enquiries Table (Customer Requests routed to Providers)
 CREATE TABLE IF NOT EXISTS service_enquiries (
     id SERIAL PRIMARY KEY,
     provider_id INT NOT NULL REFERENCES provider_profiles(id) ON DELETE CASCADE,
+    customer_id INT REFERENCES customers(id) ON DELETE SET NULL,
     customer_name VARCHAR(150) NOT NULL,
     customer_phone VARCHAR(50) NOT NULL,
     customer_email VARCHAR(150),
@@ -73,6 +86,8 @@ CREATE INDEX IF NOT EXISTS idx_providers_category_id ON provider_profiles(catego
 CREATE INDEX IF NOT EXISTS idx_providers_status ON provider_profiles(status);
 CREATE INDEX IF NOT EXISTS idx_providers_location ON provider_profiles(location);
 CREATE INDEX IF NOT EXISTS idx_enquiries_provider_id ON service_enquiries(provider_id);
+CREATE INDEX IF NOT EXISTS idx_enquiries_customer_id ON service_enquiries(customer_id);
 CREATE INDEX IF NOT EXISTS idx_enquiries_status ON service_enquiries(status);
 CREATE INDEX IF NOT EXISTS idx_reviews_provider_id ON provider_reviews(provider_id);
+
 

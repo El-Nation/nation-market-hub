@@ -373,6 +373,21 @@ app.post("/api/enquiries", async (req, res) => {
         });
     }
 
+    // Optional customer_id from JWT token if logged in
+    let customerId = null;
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            if (decoded && decoded.role === "customer") {
+                customerId = decoded.id;
+            }
+        } catch (e) {
+            // Ignore invalid token on public enquiry submission
+        }
+    }
+
     try {
         // Verify target provider exists and is approved
         const providerCheck = await db.query("SELECT id, full_name, business_name FROM provider_profiles WHERE id = $1 AND status = 'approved';", [provider_id]);
@@ -385,14 +400,15 @@ app.post("/api/enquiries", async (req, res) => {
 
         const insertQuery = `
             INSERT INTO service_enquiries (
-                provider_id, customer_name, customer_phone, customer_email, location, service_description, status
+                provider_id, customer_id, customer_name, customer_phone, customer_email, location, service_description, status
             ) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING id, provider_id, customer_name, customer_phone, customer_email, location, service_description, status, created_at;
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING id, provider_id, customer_id, customer_name, customer_phone, customer_email, location, service_description, status, created_at;
         `;
 
         const queryValues = [
             parseInt(provider_id, 10),
+            customerId,
             customer_name.trim(),
             customer_phone.trim(),
             customer_email ? customer_email.trim().toLowerCase() : null,
@@ -570,6 +586,107 @@ app.post("/api/providers/:id/reviews", async (req, res) => {
     }
 });
 
+// POST /api/customers/register - Customer Account Registration
+app.post("/api/customers/register", async (req, res) => {
+    const { full_name, email, password, phone, location } = req.body;
+
+    if (!full_name || !email || !password || !phone) {
+        return res.status(400).json({
+            success: false,
+            message: "Please fill in all required fields (Full Name, Email, Password, Phone).",
+        });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    try {
+        // Check if email already registered in customers or providers
+        const [existingCustomer, existingProvider] = await Promise.all([
+            db.query("SELECT id FROM customers WHERE LOWER(email) = $1;", [cleanEmail]),
+            db.query("SELECT id FROM provider_profiles WHERE LOWER(email) = $1;", [cleanEmail]),
+        ]);
+
+        if (existingCustomer.rows.length > 0 || existingProvider.rows.length > 0) {
+            return res.status(409).json({
+                success: false,
+                message: "An account with this email address already exists.",
+            });
+        }
+
+        const password_hash = await bcrypt.hash(password, 10);
+        const insertQuery = `
+            INSERT INTO customers (full_name, email, password_hash, phone, location) 
+            VALUES ($1, $2, $3, $4, $5) 
+            RETURNING id, full_name, email, phone, location, created_at;
+        `;
+        const result = await db.query(insertQuery, [
+            full_name.trim(),
+            cleanEmail,
+            password_hash,
+            phone.trim(),
+            location ? location.trim() : "Benin City",
+        ]);
+
+        const customer = result.rows[0];
+
+        // Sign JWT Token
+        const token = jwt.sign(
+            { id: customer.id, email: customer.email, role: "customer", name: customer.full_name },
+            process.env.JWT_SECRET,
+            { expiresIn: "24h" }
+        );
+
+        res.status(201).json({
+            success: true,
+            message: "Customer account created successfully!",
+            token,
+            role: "customer",
+            user: customer,
+        });
+    } catch (error) {
+        console.error("Error registering customer:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Server error during customer registration",
+            error: error.message,
+        });
+    }
+});
+
+// GET /api/customers/enquiries - Fetch all enquiries submitted by the logged-in customer
+app.get("/api/customers/enquiries", authenticateToken, requireRole("customer"), async (req, res) => {
+    try {
+        const queryText = `
+            SELECT 
+                e.*, 
+                p.business_name, 
+                p.full_name as provider_name, 
+                p.phone as provider_phone, 
+                p.avatar_url as provider_avatar,
+                p.location as provider_location,
+                c.name as category_name
+            FROM service_enquiries e
+            JOIN provider_profiles p ON e.provider_id = p.id
+            JOIN categories c ON p.category_id = c.id
+            WHERE e.customer_id = $1 OR LOWER(e.customer_email) = $2
+            ORDER BY e.created_at DESC;
+        `;
+        const result = await db.query(queryText, [req.user.id, req.user.email.toLowerCase()]);
+
+        res.json({
+            success: true,
+            count: result.rows.length,
+            data: result.rows,
+        });
+    } catch (error) {
+        console.error("Error fetching customer enquiries:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Server error fetching customer service requests",
+        });
+    }
+});
+
 // GET /api/auth/me - Validate token & restore active user session
 app.get("/api/auth/me", authenticateToken, async (req, res) => {
     try {
@@ -601,10 +718,61 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
                 role: "provider",
                 user: safeProvider,
             });
+        } else if (req.user.role === "customer") {
+            const result = await db.query(
+                `SELECT id, full_name, email, phone, location, avatar_url, created_at 
+                 FROM customers 
+                 WHERE id = $1;`,
+                [req.user.id]
+            );
+            if (result.rows.length === 0) {
+                return res.status(404).json({ success: false, message: "Customer profile not found." });
+            }
+            return res.json({
+                success: true,
+                role: "customer",
+                user: result.rows[0],
+            });
         }
         return res.status(400).json({ success: false, message: "Unknown user role." });
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// PUT /api/customers/profile - Update Customer Profile & Avatar URL
+app.put("/api/customers/profile", authenticateToken, requireRole("customer"), async (req, res) => {
+    const { full_name, phone, location, avatar_url } = req.body;
+    try {
+        const updateQuery = `
+            UPDATE customers
+            SET full_name = COALESCE($1, full_name),
+                phone = COALESCE($2, phone),
+                location = COALESCE($3, location),
+                avatar_url = $4
+            WHERE id = $5
+            RETURNING id, full_name, email, phone, location, avatar_url, created_at;
+        `;
+        const result = await db.query(updateQuery, [
+            full_name ? full_name.trim() : null,
+            phone ? phone.trim() : null,
+            location ? location.trim() : null,
+            avatar_url !== undefined ? (avatar_url ? avatar_url.trim() : null) : null,
+            req.user.id,
+        ]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: "Customer profile not found." });
+        }
+
+        res.json({
+            success: true,
+            message: "Profile updated successfully!",
+            user: result.rows[0],
+        });
+    } catch (error) {
+        console.error("Error updating customer profile:", error.message);
+        res.status(500).json({ success: false, message: "Server error updating profile" });
     }
 });
 
@@ -679,6 +847,38 @@ app.post("/api/auth/login", async (req, res) => {
         }
     } catch (dbErr) {
         console.error("Error during provider auth check:", dbErr.message);
+    }
+
+    // 3. Check Customer Credentials in Database
+    try {
+        const customerResult = await db.query(
+            `SELECT * FROM customers WHERE LOWER(email) = $1;`,
+            [cleanEmail]
+        );
+
+        if (customerResult.rows.length > 0) {
+            const customer = customerResult.rows[0];
+            const isMatch = await bcrypt.compare(password, customer.password_hash);
+
+            if (isMatch) {
+                const token = jwt.sign(
+                    { id: customer.id, email: customer.email, role: "customer", name: customer.full_name },
+                    process.env.JWT_SECRET,
+                    { expiresIn: "24h" }
+                );
+
+                const { password_hash, ...safeCustomer } = customer;
+                return res.json({
+                    success: true,
+                    token,
+                    role: "customer",
+                    message: "Customer login successful!",
+                    user: safeCustomer,
+                });
+            }
+        }
+    } catch (custErr) {
+        console.error("Error during customer auth check:", custErr.message);
     }
 
     return res.status(401).json({

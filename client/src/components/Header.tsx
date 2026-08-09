@@ -9,10 +9,14 @@ interface HeaderProps {
     currentAdmin: { name: string; email: string; role: string } | null;
     viewingAdminDashboard: boolean;
     onToggleAdminDashboard: () => void;
+    currentCustomer: { id: number; full_name: string; email: string; phone: string; location: string } | null;
+    viewingCustomerDashboard: boolean;
+    onToggleCustomerDashboard: () => void;
     onOpenRegisterModal: () => void;
     onOpenLoginModal: () => void;
     onLogout: () => void;
     onAdminLogout: () => void;
+    onCustomerLogout: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -22,10 +26,14 @@ export const Header: React.FC<HeaderProps> = ({
     currentAdmin,
     viewingAdminDashboard,
     onToggleAdminDashboard,
+    currentCustomer,
+    viewingCustomerDashboard,
+    onToggleCustomerDashboard,
     onOpenRegisterModal,
     onOpenLoginModal,
     onLogout,
     onAdminLogout,
+    onCustomerLogout,
 }) => {
     return (
         <header className="header">
@@ -37,6 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
                         e.preventDefault();
                         if (viewingDashboard) onToggleDashboard();
                         if (viewingAdminDashboard) onToggleAdminDashboard();
+                        if (viewingCustomerDashboard) onToggleCustomerDashboard();
                     }}
                     style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}
                 >
@@ -91,6 +100,25 @@ export const Header: React.FC<HeaderProps> = ({
                             >
                                 <LogOut size={15} />
                                 Logout
+                            </button>
+                        </div>
+                    ) : currentCustomer ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <button
+                                className="btn-secondary"
+                                onClick={onToggleCustomerDashboard}
+                                style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, borderColor: '#bae6fd', color: '#0369a1', background: '#f0f9ff' }}
+                            >
+                                <LayoutDashboard size={16} style={{ color: '#0284c7' }} />
+                                {viewingCustomerDashboard ? 'Marketplace' : 'My Requests'}
+                            </button>
+                            <button
+                                className="btn-secondary"
+                                onClick={onCustomerLogout}
+                                style={{ padding: '0.5rem 0.8rem', fontSize: '0.85rem', color: '#b91c1c', borderColor: '#fca5a5', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                            >
+                                <LogOut size={15} />
+                                Sign Out
                             </button>
                         </div>
                     ) : (
