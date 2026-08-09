@@ -78,6 +78,16 @@ CREATE TABLE IF NOT EXISTS provider_reviews (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Enquiry Messages Table (Direct Messaging between Customer & Provider)
+CREATE TABLE IF NOT EXISTS enquiry_messages (
+    id SERIAL PRIMARY KEY,
+    enquiry_id INT NOT NULL REFERENCES service_enquiries(id) ON DELETE CASCADE,
+    sender_type VARCHAR(20) NOT NULL, -- 'customer', 'provider'
+    sender_name VARCHAR(150) NOT NULL,
+    message_text TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance when searching and filtering
 CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
 CREATE INDEX IF NOT EXISTS idx_services_slug ON services(slug);
@@ -89,5 +99,7 @@ CREATE INDEX IF NOT EXISTS idx_enquiries_provider_id ON service_enquiries(provid
 CREATE INDEX IF NOT EXISTS idx_enquiries_customer_id ON service_enquiries(customer_id);
 CREATE INDEX IF NOT EXISTS idx_enquiries_status ON service_enquiries(status);
 CREATE INDEX IF NOT EXISTS idx_reviews_provider_id ON provider_reviews(provider_id);
+CREATE INDEX IF NOT EXISTS idx_messages_enquiry_id ON enquiry_messages(enquiry_id);
+
 
 

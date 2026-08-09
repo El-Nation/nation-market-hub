@@ -13,6 +13,7 @@ import {
     LogOut,
     RefreshCw,
 } from 'lucide-react';
+import { ChatModal } from './ChatModal';
 
 interface Enquiry {
     id: number;
@@ -36,6 +37,19 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [updatingId, setUpdatingId] = useState<number | null>(null);
+
+    // Direct Chat Modal State
+    const [chatModalState, setChatModalState] = useState<{
+        isOpen: boolean;
+        enquiryId: number;
+        customerName: string;
+        serviceDescription: string;
+    }>({
+        isOpen: false,
+        enquiryId: 0,
+        customerName: '',
+        serviceDescription: '',
+    });
 
     const fetchEnquiries = async () => {
         setLoading(true);
@@ -310,6 +324,17 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
 
                                             {/* Quick Actions & Status Control */}
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                <button
+                                                    onClick={() => setChatModalState({
+                                                        isOpen: true,
+                                                        enquiryId: item.id,
+                                                        customerName: item.customer_name,
+                                                        serviceDescription: item.service_description,
+                                                    })}
+                                                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.3rem', background: '#e0f2fe', border: '1px solid #7dd3fc', color: '#0369a1', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}
+                                                >
+                                                    <MessageSquare size={14} /> Chat Direct
+                                                </button>
                                                 <a
                                                     href={`tel:${item.customer_phone}`}
                                                     className="btn-secondary"
@@ -353,6 +378,18 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
                     )}
                 </div>
             </div>
+
+            {/* Direct Chat Modal */}
+            <ChatModal
+                isOpen={chatModalState.isOpen}
+                onClose={() => setChatModalState(prev => ({ ...prev, isOpen: false }))}
+                enquiryId={chatModalState.enquiryId}
+                customerName={chatModalState.customerName}
+                providerName={provider.business_name || provider.full_name}
+                serviceDescription={chatModalState.serviceDescription}
+                currentUserType="provider"
+                currentUserName={provider.business_name || provider.full_name}
+            />
         </div>
     );
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, Clock, CheckCircle2, AlertCircle, Phone, MessageSquare, MapPin, Mail, Calendar, Tag, Camera, X, Check, Image as ImageIcon, Upload } from 'lucide-react';
+import { ChatModal } from './ChatModal';
 
 interface ServiceEnquiry {
     id: number;
@@ -55,6 +56,19 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({ customer, 
     const [inputAvatarUrl, setInputAvatarUrl] = useState<string>(customer.avatar_url || '');
     const [savingAvatar, setSavingAvatar] = useState<boolean>(false);
     const [avatarError, setAvatarError] = useState<string | null>(null);
+
+    // Direct Chat Modal State
+    const [chatModalState, setChatModalState] = useState<{
+        isOpen: boolean;
+        enquiryId: number;
+        providerName: string;
+        serviceDescription: string;
+    }>({
+        isOpen: false,
+        enquiryId: 0,
+        providerName: '',
+        serviceDescription: '',
+    });
 
     useEffect(() => {
         setCurrentCustomer(customer);
@@ -409,30 +423,55 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({ customer, 
                                         Provider Contact: <strong style={{ color: '#0f172a' }}>{enquiry.provider_phone || 'N/A'}</strong>
                                     </div>
 
-                                    {enquiry.provider_phone && (
-                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                            <a
-                                                href={`tel:${enquiry.provider_phone}`}
-                                                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', padding: '0.45rem 0.85rem', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none' }}
-                                            >
-                                                <Phone size={14} /> Call Provider
-                                            </a>
-                                            <a
-                                                href={`https://wa.me/234${enquiry.provider_phone.replace(/^0/, '')}`}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: '#dcfce7', border: '1px solid #86efac', color: '#15803d', padding: '0.45rem 0.85rem', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none' }}
-                                            >
-                                                <MessageSquare size={14} /> WhatsApp
-                                            </a>
-                                        </div>
-                                    )}
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button
+                                            onClick={() => setChatModalState({
+                                                isOpen: true,
+                                                enquiryId: enquiry.id,
+                                                providerName: enquiry.business_name || enquiry.provider_name || 'Service Provider',
+                                                serviceDescription: enquiry.service_description,
+                                            })}
+                                            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: '#e0f2fe', border: '1px solid #7dd3fc', color: '#0369a1', padding: '0.45rem 0.85rem', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
+                                        >
+                                            <MessageSquare size={14} /> Chat Direct
+                                        </button>
+                                        {enquiry.provider_phone && (
+                                            <>
+                                                <a
+                                                    href={`tel:${enquiry.provider_phone}`}
+                                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', padding: '0.45rem 0.85rem', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none' }}
+                                                >
+                                                    <Phone size={14} /> Call
+                                                </a>
+                                                <a
+                                                    href={`https://wa.me/234${enquiry.provider_phone.replace(/^0/, '')}`}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: '#dcfce7', border: '1px solid #86efac', color: '#15803d', padding: '0.45rem 0.85rem', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none' }}
+                                                >
+                                                    <MessageSquare size={14} /> WhatsApp
+                                                </a>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))}
                     </div>
                 )}
             </div>
+
+            {/* Direct Chat Modal */}
+            <ChatModal
+                isOpen={chatModalState.isOpen}
+                onClose={() => setChatModalState(prev => ({ ...prev, isOpen: false }))}
+                enquiryId={chatModalState.enquiryId}
+                customerName={currentCustomer.full_name}
+                providerName={chatModalState.providerName}
+                serviceDescription={chatModalState.serviceDescription}
+                currentUserType="customer"
+                currentUserName={currentCustomer.full_name}
+            />
 
             {/* Profile Avatar Update Modal */}
             {isAvatarModalOpen && (

@@ -571,6 +571,89 @@ app.patch("/api/enquiries/:id/status", authenticateToken, requireRole("provider"
     }
 });
 
+// GET /api/enquiries/:id/messages - Fetch all chat messages for a specific enquiry
+app.get("/api/enquiries/:id/messages", async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Verify enquiry exists
+        const enquiryCheck = await db.query("SELECT id FROM service_enquiries WHERE id = $1;", [id]);
+        if (enquiryCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Service enquiry not found.",
+            });
+        }
+
+        const queryText = `
+            SELECT * FROM enquiry_messages 
+            WHERE enquiry_id = $1 
+            ORDER BY created_at ASC;
+        `;
+        const result = await db.query(queryText, [id]);
+        res.json({
+            success: true,
+            count: result.rows.length,
+            data: result.rows,
+        });
+    } catch (error) {
+        console.error("Error fetching enquiry messages:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Unable to load messages.",
+        });
+    }
+});
+
+// POST /api/enquiries/:id/messages - Send a message in an enquiry chat thread
+app.post("/api/enquiries/:id/messages", async (req, res) => {
+    const { id } = req.params;
+    const { sender_type, sender_name, message_text } = req.body;
+
+    if (!sender_type || !sender_name || !message_text || !message_text.trim()) {
+        return res.status(400).json({
+            success: false,
+            message: "Sender type, sender name, and message content are required.",
+        });
+    }
+
+    if (!['customer', 'provider'].includes(sender_type)) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid sender_type. Must be 'customer' or 'provider'.",
+        });
+    }
+
+    try {
+        // Verify enquiry exists
+        const enquiryCheck = await db.query("SELECT id FROM service_enquiries WHERE id = $1;", [id]);
+        if (enquiryCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Service enquiry not found.",
+            });
+        }
+
+        const insertQuery = `
+            INSERT INTO enquiry_messages (enquiry_id, sender_type, sender_name, message_text) 
+            VALUES ($1, $2, $3, $4) 
+            RETURNING *;
+        `;
+        const result = await db.query(insertQuery, [id, sender_type, sender_name.trim(), message_text.trim()]);
+
+        res.status(201).json({
+            success: true,
+            message: "Message sent successfully!",
+            data: result.rows[0],
+        });
+    } catch (error) {
+        console.error("Error posting enquiry message:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Server error sending message",
+        });
+    }
+});
+
 // GET /api/providers/:id/reviews - Fetch all reviews for a provider
 app.get("/api/providers/:id/reviews", async (req, res) => {
     const { id } = req.params;
