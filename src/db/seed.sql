@@ -315,7 +315,7 @@ VALUES
     'Benin City', 
     4.84, 
     'approved', 
-    'https://images.unsplash.com/photo-1486006920555-c77dce18193b?auto=format&fit=crop&w=300&q=80'
+    'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=300&q=80'
 ),
 
 -- 7. Professional Services (Category 7)

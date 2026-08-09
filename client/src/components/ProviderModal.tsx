@@ -38,6 +38,9 @@ export const ProviderModal: React.FC<ProviderModalProps> = ({ provider, initialM
                             <img
                                 src={provider.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
                                 alt={provider.full_name}
+                                onError={(e) => {
+                                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80';
+                                }}
                                 style={{ width: '80px', height: '80px', borderRadius: '16px', objectFit: 'cover', border: '1px solid #e2e8f0' }}
                             />
                             <div>
