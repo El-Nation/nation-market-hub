@@ -36,9 +36,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ admin, onLogout 
     const fetchAdminData = async () => {
         setLoading(true);
         try {
+            const token = localStorage.getItem('auth_token');
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
             const [providersRes, statsRes] = await Promise.all([
-                fetch(`http://localhost:5000/api/admin/providers?status=${statusFilter}`),
-                fetch('http://localhost:5000/api/admin/stats'),
+                fetch(`http://localhost:5000/api/admin/providers?status=${statusFilter}`, { headers }),
+                fetch('http://localhost:5000/api/admin/stats', { headers }),
             ]);
 
             const providersData = await providersRes.json();
@@ -64,9 +70,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ admin, onLogout 
     const handleUpdateStatus = async (providerId: number, newStatus: 'approved' | 'rejected' | 'suspended' | 'pending') => {
         setActionLoadingId(providerId);
         try {
+            const token = localStorage.getItem('auth_token');
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
             const response = await fetch(`http://localhost:5000/api/admin/providers/${providerId}/status`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({ status: newStatus }),
             });
 

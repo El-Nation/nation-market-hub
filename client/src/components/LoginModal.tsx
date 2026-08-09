@@ -4,7 +4,7 @@ import { X, LogIn, AlertCircle, Loader2, KeyRound, Mail } from 'lucide-react';
 interface LoginModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onLoginSuccess: (role: 'admin' | 'provider' | 'customer', user: any) => void;
+    onLoginSuccess: (role: 'admin' | 'provider' | 'customer', user: any, token: string) => void;
     onOpenRegisterModal: () => void;
 }
 
@@ -38,7 +38,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 throw new Error(data.message || 'Login failed. Please check your credentials.');
             }
 
-            onLoginSuccess(data.role, data.user);
+            if (data.token) {
+                localStorage.setItem('auth_token', data.token);
+            }
+
+            onLoginSuccess(data.role, data.user, data.token);
             onClose();
         } catch (err: any) {
             setError(err.message || 'Server authentication error');

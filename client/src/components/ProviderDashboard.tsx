@@ -59,9 +59,15 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
     const handleStatusChange = async (enquiryId: number, newStatus: string) => {
         setUpdatingId(enquiryId);
         try {
+            const token = localStorage.getItem('auth_token');
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
             const res = await fetch(`http://localhost:5000/api/enquiries/${enquiryId}/status`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({ status: newStatus }),
             });
             const data = await res.json();

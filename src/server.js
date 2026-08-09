@@ -4,14 +4,57 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const db = require("./config/db");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Validate JWT Secret presence from environment
+if (!process.env.JWT_SECRET) {
+    console.error("CRITICAL ERROR: JWT_SECRET environment variable is missing in .env!");
+}
+
 // Enable CORS and JSON body parsing middleware
 app.use(cors());
 app.use(express.json());
+
+// Authentication Middleware: Verify JWT Bearer Token
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+
+    if (!token) {
+        return res.status(401).json({
+            success: false,
+            message: "Authentication token required. Please log in.",
+        });
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({
+                success: false,
+                message: "Invalid or expired session token. Please log in again.",
+            });
+        }
+        req.user = user;
+        next();
+    });
+};
+
+// Authorization Middleware: Role-Based Access Control (RBAC)
+const requireRole = (...allowedRoles) => {
+    return (req, res, next) => {
+        if (!req.user || !allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({
+                success: false,
+                message: "Access forbidden. Insufficient user permissions.",
+            });
+        }
+        next();
+    };
+};
 
 // Root route
 app.get("/", (req, res) => {
@@ -402,8 +445,8 @@ app.get("/api/providers/:id/enquiries", async (req, res) => {
     }
 });
 
-// PATCH /api/enquiries/:id/status - Update enquiry status
-app.patch("/api/enquiries/:id/status", async (req, res) => {
+// PATCH /api/enquiries/:id/status - Update enquiry status (Protected for Providers)
+app.patch("/api/enquiries/:id/status", authenticateToken, requireRole("provider"), async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
@@ -527,6 +570,44 @@ app.post("/api/providers/:id/reviews", async (req, res) => {
     }
 });
 
+// GET /api/auth/me - Validate token & restore active user session
+app.get("/api/auth/me", authenticateToken, async (req, res) => {
+    try {
+        if (req.user.role === "admin") {
+            return res.json({
+                success: true,
+                role: "admin",
+                user: {
+                    id: req.user.id || 1,
+                    name: req.user.name || "System Administrator",
+                    email: req.user.email,
+                    role: "Super Admin",
+                },
+            });
+        } else if (req.user.role === "provider") {
+            const result = await db.query(
+                `SELECT p.*, c.name as category_name 
+                 FROM provider_profiles p 
+                 JOIN categories c ON p.category_id = c.id 
+                 WHERE p.id = $1;`,
+                [req.user.id]
+            );
+            if (result.rows.length === 0) {
+                return res.status(404).json({ success: false, message: "Provider profile not found." });
+            }
+            const { password_hash, ...safeProvider } = result.rows[0];
+            return res.json({
+                success: true,
+                role: "provider",
+                user: safeProvider,
+            });
+        }
+        return res.status(400).json({ success: false, message: "Unknown user role." });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // POST /api/auth/login - Unified Authentication Endpoint (Admin, Provider, Customer)
 app.post("/api/auth/login", async (req, res) => {
     const { email, password } = req.body;
@@ -545,11 +626,19 @@ app.post("/api/auth/login", async (req, res) => {
     const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
 
     if (cleanEmail === adminEmail && password === adminPassword) {
+        const token = jwt.sign(
+            { id: 1, email: adminEmail, role: "admin", name: "System Administrator" },
+            process.env.JWT_SECRET,
+            { expiresIn: "24h" }
+        );
+
         return res.json({
             success: true,
+            token,
             role: "admin",
             message: "Admin authentication successful!",
             user: {
+                id: 1,
                 name: "System Administrator",
                 email: adminEmail,
                 role: "Super Admin",
@@ -572,9 +661,16 @@ app.post("/api/auth/login", async (req, res) => {
             const isMatch = await bcrypt.compare(password, provider.password_hash);
             
             if (isMatch) {
+                const token = jwt.sign(
+                    { id: provider.id, email: provider.email, role: "provider", name: provider.full_name },
+                    process.env.JWT_SECRET,
+                    { expiresIn: "24h" }
+                );
+
                 const { password_hash, ...safeProvider } = provider;
                 return res.json({
                     success: true,
+                    token,
                     role: "provider",
                     message: "Provider login successful!",
                     user: safeProvider,
@@ -606,8 +702,15 @@ app.post("/api/admin/login", async (req, res) => {
     const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
 
     if (email.toLowerCase() === adminEmail && password === adminPassword) {
+        const token = jwt.sign(
+            { id: 1, email: adminEmail, role: "admin", name: "System Administrator" },
+            process.env.JWT_SECRET,
+            { expiresIn: "24h" }
+        );
+
         return res.json({
             success: true,
+            token,
             message: "Admin authentication successful!",
             admin: {
                 name: "System Administrator",
@@ -623,8 +726,8 @@ app.post("/api/admin/login", async (req, res) => {
     });
 });
 
-// GET /api/admin/providers - Fetch all provider applications for moderation
-app.get("/api/admin/providers", async (req, res) => {
+// GET /api/admin/providers - Protected Platform Moderation Queue
+app.get("/api/admin/providers", authenticateToken, requireRole("admin"), async (req, res) => {
     const { status } = req.query;
 
     let queryText = `
@@ -661,8 +764,8 @@ app.get("/api/admin/providers", async (req, res) => {
     }
 });
 
-// PATCH /api/admin/providers/:id/status - Approve, Reject, or Suspend provider profile
-app.patch("/api/admin/providers/:id/status", async (req, res) => {
+// PATCH /api/admin/providers/:id/status - Protected Admin Provider Moderation
+app.patch("/api/admin/providers/:id/status", authenticateToken, requireRole("admin"), async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
@@ -704,8 +807,8 @@ app.patch("/api/admin/providers/:id/status", async (req, res) => {
     }
 });
 
-// GET /api/admin/stats - Platform Overview Health & Summary Metrics
-app.get("/api/admin/stats", async (req, res) => {
+// GET /api/admin/stats - Protected Admin Dashboard Metrics
+app.get("/api/admin/stats", authenticateToken, requireRole("admin"), async (req, res) => {
     try {
         const totalProvidersRes = await db.query("SELECT COUNT(*)::int as count FROM provider_profiles;");
         const pendingProvidersRes = await db.query("SELECT COUNT(*)::int as count FROM provider_profiles WHERE status = 'pending';");

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { CategoryList } from './components/CategoryList';
@@ -28,6 +28,35 @@ export function App() {
     // Admin Authentication State
     const [currentAdmin, setCurrentAdmin] = useState<{ name: string; email: string; role: string } | null>(null);
     const [viewingAdminDashboard, setViewingAdminDashboard] = useState<boolean>(false);
+
+    // Session recovery on app mount
+    useEffect(() => {
+        const token = localStorage.getItem('auth_token');
+        if (!token) return;
+
+        fetch('http://localhost:5000/api/auth/me', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.success) {
+                    if (data.role === 'admin') {
+                        setCurrentAdmin(data.user);
+                        setViewingAdminDashboard(true);
+                    } else if (data.role === 'provider') {
+                        setCurrentProvider(data.user);
+                        setViewingDashboard(true);
+                    }
+                } else {
+                    localStorage.removeItem('auth_token');
+                }
+            })
+            .catch((err) => {
+                console.error('Session restoration failed:', err);
+            });
+    }, []);
 
     const handleHeroSearch = (term: string) => {
         setSearchTerm(term);
@@ -68,11 +97,13 @@ export function App() {
     };
 
     const handleLogout = () => {
+        localStorage.removeItem('auth_token');
         setCurrentProvider(null);
         setViewingDashboard(false);
     };
 
     const handleAdminLogout = () => {
+        localStorage.removeItem('auth_token');
         setCurrentAdmin(null);
         setViewingAdminDashboard(false);
     };
