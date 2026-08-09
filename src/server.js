@@ -259,6 +259,128 @@ app.post("/api/providers/register", async (req, res) => {
     }
 });
 
+// POST /api/enquiries - Submit a new Customer Service Request / Enquiry
+app.post("/api/enquiries", async (req, res) => {
+    const { provider_id, customer_name, customer_phone, customer_email, location, service_description } = req.body;
+
+    // Validation
+    if (!provider_id || !customer_name || !customer_phone || !service_description) {
+        return res.status(400).json({
+            success: false,
+            message: "Please fill in all required fields (Provider ID, Your Name, Phone Number, Service Description).",
+        });
+    }
+
+    try {
+        // Verify target provider exists and is approved
+        const providerCheck = await db.query("SELECT id, full_name, business_name FROM provider_profiles WHERE id = $1 AND status = 'approved';", [provider_id]);
+        if (providerCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Target service provider not found or not active.",
+            });
+        }
+
+        const insertQuery = `
+            INSERT INTO service_enquiries (
+                provider_id, customer_name, customer_phone, customer_email, location, service_description, status
+            ) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING id, provider_id, customer_name, customer_phone, customer_email, location, service_description, status, created_at;
+        `;
+
+        const queryValues = [
+            parseInt(provider_id, 10),
+            customer_name.trim(),
+            customer_phone.trim(),
+            customer_email ? customer_email.trim().toLowerCase() : null,
+            location ? location.trim() : "Benin City",
+            service_description.trim(),
+            "pending",
+        ];
+
+        const result = await db.query(insertQuery, queryValues);
+
+        res.status(201).json({
+            success: true,
+            message: "Your service request has been sent to the provider successfully!",
+            data: result.rows[0],
+            provider: providerCheck.rows[0],
+        });
+    } catch (error) {
+        console.error("Error submitting customer enquiry:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Server error submitting service enquiry",
+            error: error.message,
+        });
+    }
+});
+
+// GET /api/providers/:id/enquiries - Fetch all customer enquiries for a provider
+app.get("/api/providers/:id/enquiries", async (req, res) => {
+    const { id } = req.params;
+    try {
+        const queryText = `
+            SELECT e.*, p.business_name, p.full_name as provider_name 
+            FROM service_enquiries e 
+            JOIN provider_profiles p ON e.provider_id = p.id 
+            WHERE e.provider_id = $1 
+            ORDER BY e.created_at DESC;
+        `;
+        const result = await db.query(queryText, [id]);
+        res.json({
+            success: true,
+            count: result.rows.length,
+            data: result.rows,
+        });
+    } catch (error) {
+        console.error("Error fetching provider enquiries:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Server error fetching provider enquiries",
+        });
+    }
+});
+
+// PATCH /api/enquiries/:id/status - Update enquiry status
+app.patch("/api/enquiries/:id/status", async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ["pending", "contacted", "completed", "cancelled"];
+    if (!status || !validStatuses.includes(status)) {
+        return res.status(400).json({
+            success: false,
+            message: `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
+        });
+    }
+
+    try {
+        const updateQuery = "UPDATE service_enquiries SET status = $1 WHERE id = $2 RETURNING *;";
+        const result = await db.query(updateQuery, [status, id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Enquiry not found",
+            });
+        }
+
+        res.json({
+            success: true,
+            message: `Enquiry status updated to ${status}`,
+            data: result.rows[0],
+        });
+    } catch (error) {
+        console.error("Error updating enquiry status:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Server error updating enquiry status",
+        });
+    }
+});
+
 // Start the server and test database connectivity
 app.listen(PORT, async () => {
     console.log(`Server running on http://localhost:${PORT}`);

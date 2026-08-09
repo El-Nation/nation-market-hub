@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Provider } from '../types';
-import { X, Star, MapPin, Award, CheckCircle2, Send } from 'lucide-react';
+import { X, Star, MapPin, Award, CheckCircle2, Send, AlertCircle, Loader2 } from 'lucide-react';
 
 interface ProviderModalProps {
     provider: Provider | null;
@@ -14,12 +14,42 @@ export const ProviderModal: React.FC<ProviderModalProps> = ({ provider, initialM
     const [mode, setMode] = useState<'profile' | 'enquiry' | 'success'>(initialMode);
     const [customerName, setCustomerName] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
+    const [customerEmail, setCustomerEmail] = useState('');
     const [location, setLocation] = useState('Benin City');
     const [description, setDescription] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const handleEnquirySubmit = (e: React.FormEvent) => {
+    const handleEnquirySubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setMode('success');
+        setError(null);
+        setSubmitting(true);
+
+        try {
+            const response = await fetch('http://localhost:5000/api/enquiries', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    provider_id: provider.id,
+                    customer_name: customerName,
+                    customer_phone: customerPhone,
+                    customer_email: customerEmail || null,
+                    location,
+                    service_description: description,
+                }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to submit service enquiry');
+            }
+
+            setMode('success');
+        } catch (err: any) {
+            setError(err.message || 'Failed to connect to server');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -97,9 +127,16 @@ export const ProviderModal: React.FC<ProviderModalProps> = ({ provider, initialM
                         <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '0.4rem', color: '#0f172a' }}>
                             Request Service from <span className="gradient-text">{provider.business_name || provider.full_name}</span>
                         </h2>
-                        <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                        <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1.25rem' }}>
                             No registration required. Fill in your details below so the provider can contact you.
                         </p>
+
+                        {error && (
+                            <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#b91c1c', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.88rem' }}>
+                                <AlertCircle size={18} />
+                                {error}
+                            </div>
+                        )}
 
                         <form onSubmit={handleEnquirySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             <div>
@@ -127,16 +164,27 @@ export const ProviderModal: React.FC<ProviderModalProps> = ({ provider, initialM
                                     />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '0.85rem', color: '#334155', marginBottom: '0.3rem', fontWeight: 600 }}>Location / Area *</label>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', color: '#334155', marginBottom: '0.3rem', fontWeight: 600 }}>Email Address (Optional)</label>
                                     <input
-                                        type="text"
-                                        required
-                                        placeholder="e.g. GRA, Benin City"
-                                        value={location}
-                                        onChange={(e) => setLocation(e.target.value)}
+                                        type="email"
+                                        placeholder="john@example.com"
+                                        value={customerEmail}
+                                        onChange={(e) => setCustomerEmail(e.target.value)}
                                         style={{ width: '100%', padding: '0.75rem', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#0f172a', outline: 'none' }}
                                     />
                                 </div>
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', color: '#334155', marginBottom: '0.3rem', fontWeight: 600 }}>Location / Area *</label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="e.g. GRA, Benin City"
+                                    value={location}
+                                    onChange={(e) => setLocation(e.target.value)}
+                                    style={{ width: '100%', padding: '0.75rem', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#0f172a', outline: 'none' }}
+                                />
                             </div>
 
                             <div>
@@ -155,9 +203,9 @@ export const ProviderModal: React.FC<ProviderModalProps> = ({ provider, initialM
                                 <button type="button" className="btn-secondary" style={{ flex: 1, padding: '0.8rem' }} onClick={() => setMode('profile')}>
                                     Back to Profile
                                 </button>
-                                <button type="submit" className="btn-primary" style={{ flex: 2, padding: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                                    <Send size={16} />
-                                    Submit Service Enquiry
+                                <button type="submit" disabled={submitting} className="btn-primary" style={{ flex: 2, padding: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                                    {submitting ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
+                                    {submitting ? 'Submitting Enquiry...' : 'Submit Service Enquiry'}
                                 </button>
                             </div>
                         </form>
@@ -169,7 +217,7 @@ export const ProviderModal: React.FC<ProviderModalProps> = ({ provider, initialM
                         <CheckCircle2 size={56} style={{ color: '#10b981', margin: '0 auto 1rem' }} />
                         <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.5rem', color: '#0f172a' }}>Enquiry Sent Successfully!</h2>
                         <p style={{ color: '#475569', fontSize: '0.95rem', marginBottom: '1.5rem' }}>
-                            Your request has been routed to <strong style={{ color: '#0f172a' }}>{provider.business_name || provider.full_name}</strong>. They will contact you shortly at <strong style={{ color: '#0f172a' }}>{customerPhone}</strong>.
+                            Your service request has been registered and routed to <strong style={{ color: '#0f172a' }}>{provider.business_name || provider.full_name}</strong>. They will contact you directly at <strong style={{ color: '#0f172a' }}>{customerPhone}</strong>.
                         </p>
                         <button className="btn-primary" style={{ padding: '0.75rem 2rem' }} onClick={onClose}>
                             Close & Continue Browsing

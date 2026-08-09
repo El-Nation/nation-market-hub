@@ -42,6 +42,19 @@ CREATE TABLE provider_profiles (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Service Enquiries Table (Customer Requests routed to Providers)
+CREATE TABLE service_enquiries (
+    id SERIAL PRIMARY KEY,
+    provider_id INT NOT NULL REFERENCES provider_profiles(id) ON DELETE CASCADE,
+    customer_name VARCHAR(150) NOT NULL,
+    customer_phone VARCHAR(50) NOT NULL,
+    customer_email VARCHAR(150),
+    location VARCHAR(150) NOT NULL,
+    service_description TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending', -- 'pending', 'contacted', 'completed', 'cancelled'
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance when searching and filtering
 CREATE INDEX idx_categories_slug ON categories(slug);
 CREATE INDEX idx_services_slug ON services(slug);
@@ -49,3 +62,6 @@ CREATE INDEX idx_services_category_id ON services(category_id);
 CREATE INDEX idx_providers_category_id ON provider_profiles(category_id);
 CREATE INDEX idx_providers_status ON provider_profiles(status);
 CREATE INDEX idx_providers_location ON provider_profiles(location);
+CREATE INDEX idx_enquiries_provider_id ON service_enquiries(provider_id);
+CREATE INDEX idx_enquiries_status ON service_enquiries(status);
+
