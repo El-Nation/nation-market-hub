@@ -70,7 +70,7 @@ VALUES
 (
     'David Okon', 
     'david.electrical@gmail.com', 
-    '$2a$10$wT3wY2p5T9W54x3jY1.1uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y', 
+    '$2b$10$Lxjw/8PWE1Kcz7zjztwpduhKTlKcvH9yoXAYJI7Zee2aOPuseJwsu', 
     '08012345678', 
     'David Electrical Services', 
     1, 
@@ -85,7 +85,7 @@ VALUES
 (
     'Osas Plumbers Ltd', 
     'osas.plumbing@gmail.com', 
-    '$2a$10$wT3wY2p5T9W54x3jY1.1uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y', 
+    '$2b$10$Lxjw/8PWE1Kcz7zjztwpduhKTlKcvH9yoXAYJI7Zee2aOPuseJwsu', 
     '08023456789', 
     'Osas Plumbing Solutions', 
     1, 
@@ -100,7 +100,7 @@ VALUES
 (
     'Sparkle Clean Services', 
     'sparkleclean.benin@gmail.com', 
-    '$2a$10$wT3wY2p5T9W54x3jY1.1uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y', 
+    '$2b$10$Lxjw/8PWE1Kcz7zjztwpduhKTlKcvH9yoXAYJI7Zee2aOPuseJwsu', 
     '08061122334', 
     'Sparkle Clean Benin', 
     1, 
@@ -115,7 +115,7 @@ VALUES
 (
     'WoodCraft Carpenters', 
     'woodcraft@gmail.com', 
-    '$2a$10$wT3wY2p5T9W54x3jY1.1uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y', 
+    '$2b$10$Lxjw/8PWE1Kcz7zjztwpduhKTlKcvH9yoXAYJI7Zee2aOPuseJwsu', 
     '08072233445', 
     'WoodCraft Furniture & Carpentry', 
     1, 
@@ -130,7 +130,7 @@ VALUES
 (
     'Vibrant Wall Painters', 
     'vibrantwalls@gmail.com', 
-    '$2a$10$wT3wY2p5T9W54x3jY1.1uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y', 
+    '$2b$10$Lxjw/8PWE1Kcz7zjztwpduhKTlKcvH9yoXAYJI7Zee2aOPuseJwsu', 
     '08083344556', 
     'Vibrant Walls Painting Co.', 
     1, 
@@ -145,7 +145,7 @@ VALUES
 (
     'CoolBreeze AC Technicians', 
     'coolbreeze.ac@gmail.com', 
-    '$2a$10$wT3wY2p5T9W54x3jY1.1uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y', 
+    '$2b$10$Lxjw/8PWE1Kcz7zjztwpduhKTlKcvH9yoXAYJI7Zee2aOPuseJwsu', 
     '08094455667', 
     'CoolBreeze Air Conditioning', 
     1, 
@@ -162,7 +162,7 @@ VALUES
 (
     'Emmanuel Dev', 
     'emmanuel.tech@gmail.com', 
-    '$2a$10$wT3wY2p5T9W54x3jY1.1uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y', 
+    '$2b$10$Lxjw/8PWE1Kcz7zjztwpduhKTlKcvH9yoXAYJI7Zee2aOPuseJwsu', 
     '08034567890', 
     'TechNova Web Solutions', 
     2, 
@@ -177,7 +177,7 @@ VALUES
 (
     'CreativeVision Designs', 
     'creativevision@gmail.com', 
-    '$2a$10$wT3wY2p5T9W54x3jY1.1uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y', 
+    '$2b$10$Lxjw/8PWE1Kcz7zjztwpduhKTlKcvH9yoXAYJI7Zee2aOPuseJwsu', 
     '08095566778', 
     'CreativeVision Graphics', 
     2, 
@@ -192,7 +192,7 @@ VALUES
 (
     'CyberTech IT Solutions', 
     'cybertech.it@gmail.com', 
-    '$2a$10$wT3wY2p5T9W54x3jY1.1uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y', 
+    '$2b$10$Lxjw/8PWE1Kcz7zjztwpduhKTlKcvH9yoXAYJI7Zee2aOPuseJwsu', 
     '08016677889', 
     'CyberTech Systems', 
     2, 
@@ -209,7 +209,7 @@ VALUES
 (
     'Grace Academic Tutors', 
     'grace.tutors@gmail.com', 
-    '$2a$10$wT3wY2p5T9W54x3jY1.1uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y', 
+    '$2b$10$Lxjw/8PWE1Kcz7zjztwpduhKTlKcvH9yoXAYJI7Zee2aOPuseJwsu', 
     '08045678901', 
     'Swift Minds Coaching', 
     3, 
@@ -224,7 +224,7 @@ VALUES
 (
     'Harmony Music School', 
     'harmonymusic@gmail.com', 
-    '$2a$10$wT3wY2p5T9W54x3jY1.1uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y', 
+    '$2b$10$Lxjw/8PWE1Kcz7zjztwpduhKTlKcvH9yoXAYJI7Zee2aOPuseJwsu', 
     '08027788990', 
     'Harmony Music Academy', 
     3, 
@@ -241,7 +241,7 @@ VALUES
 (
     'Executive Cuts Barber', 
     'executivecuts@gmail.com', 
-    '$2a$10$wT3wY2p5T9W54x3jY1.1uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y', 
+    '$2b$10$Lxjw/8PWE1Kcz7zjztwpduhKTlKcvH9yoXAYJI7Zee2aOPuseJwsu', 
     '08038899001', 
     'Executive VIP Barber Studio', 
     4, 
@@ -256,7 +256,7 @@ VALUES
 (
     'Glamour Hair & Beauty', 
     'glamourhair@gmail.com', 
-    '$2a$10$wT3wY2p5T9W54x3jY1.1uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y', 
+    '$2b$10$Lxjw/8PWE1Kcz7zjztwpduhKTlKcvH9yoXAYJI7Zee2aOPuseJwsu', 
     '08049900112', 
     'Glamour Hair Salon', 
     4, 
@@ -271,7 +271,7 @@ VALUES
 (
     'Divine Touch Makeup', 
     'divinetouch.mua@gmail.com', 
-    '$2a$10$wT3wY2p5T9W54x3jY1.1uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y', 
+    '$2b$10$Lxjw/8PWE1Kcz7zjztwpduhKTlKcvH9yoXAYJI7Zee2aOPuseJwsu', 
     '08050011223', 
     'Divine Touch MUA', 
     4, 
@@ -288,7 +288,7 @@ VALUES
 (
     'Chef Mercy', 
     'chefercy@gmail.com', 
-    '$2a$10$wT3wY2p5T9W54x3jY1.1uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y', 
+    '$2b$10$Lxjw/8PWE1Kcz7zjztwpduhKTlKcvH9yoXAYJI7Zee2aOPuseJwsu', 
     '08056784058', 
     'Mercy Gourmet Kitchen', 
     5, 
@@ -305,7 +305,7 @@ VALUES
 (
     'Master Auto Mechanics', 
     'mastermechanics@gmail.com', 
-    '$2a$10$wT3wY2p5T9W54x3jY1.1uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y', 
+    '$2b$10$Lxjw/8PWE1Kcz7zjztwpduhKTlKcvH9yoXAYJI7Zee2aOPuseJwsu', 
     '08061122335', 
     'Master Auto Repairs', 
     6, 
@@ -322,7 +322,7 @@ VALUES
 (
     'Apex Financials', 
     'apexfinancials@gmail.com', 
-    '$2a$10$wT3wY2p5T9W54x3jY1.1uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y', 
+    '$2b$10$Lxjw/8PWE1Kcz7zjztwpduhKTlKcvH9yoXAYJI7Zee2aOPuseJwsu', 
     '08072233446', 
     'Apex Accounting & Tax Consultants', 
     7, 
@@ -339,7 +339,7 @@ VALUES
 (
     'FitLife Coaching', 
     'fitlife.coach@gmail.com', 
-    '$2a$10$wT3wY2p5T9W54x3jY1.1uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y11uOQ1Y', 
+    '$2b$10$Lxjw/8PWE1Kcz7zjztwpduhKTlKcvH9yoXAYJI7Zee2aOPuseJwsu', 
     '08083344557', 
     'FitLife Personal Training', 
     8, 

@@ -6,6 +6,8 @@ import { CategoryServicesModal } from './components/CategoryServicesModal';
 import { ProviderSearch } from './components/ProviderSearch';
 import { ProviderModal } from './components/ProviderModal';
 import { ProviderRegisterModal } from './components/ProviderRegisterModal';
+import { ProviderLoginModal } from './components/ProviderLoginModal';
+import { ProviderDashboard } from './components/ProviderDashboard';
 import { ProviderCTA } from './components/ProviderCTA';
 import { Footer } from './components/Footer';
 import type { Provider, Category } from './types';
@@ -15,7 +17,12 @@ export function App() {
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
     const [modalMode, setModalMode] = useState<'profile' | 'enquiry'>('profile');
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState<boolean>(false);
+    const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
     const [searchTerm, setSearchTerm] = useState<string>('');
+
+    // Provider Authentication State
+    const [currentProvider, setCurrentProvider] = useState<Provider | null>(null);
+    const [viewingDashboard, setViewingDashboard] = useState<boolean>(false);
 
     const handleHeroSearch = (term: string) => {
         setSearchTerm(term);
@@ -37,28 +44,52 @@ export function App() {
         }
     };
 
+    const handleLoginSuccess = (provider: Provider) => {
+        setCurrentProvider(provider);
+        setViewingDashboard(true);
+    };
+
+    const handleLogout = () => {
+        setCurrentProvider(null);
+        setViewingDashboard(false);
+    };
+
     return (
         <div className="app-layout" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-            <Header onOpenRegisterModal={() => setIsRegisterModalOpen(true)} />
+            <Header
+                currentProvider={currentProvider}
+                viewingDashboard={viewingDashboard}
+                onToggleDashboard={() => setViewingDashboard(!viewingDashboard)}
+                onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
+                onOpenLoginModal={() => setIsLoginModalOpen(true)}
+                onLogout={handleLogout}
+            />
+
             <main style={{ flex: 1 }}>
-                <Hero onSearch={handleHeroSearch} />
-                
-                <CategoryList onSelectCategory={handleSelectCategory} />
+                {viewingDashboard && currentProvider ? (
+                    <ProviderDashboard provider={currentProvider} onLogout={handleLogout} />
+                ) : (
+                    <>
+                        <Hero onSearch={handleHeroSearch} />
 
-                <ProviderSearch
-                    key={searchTerm}
-                    initialSearchTerm={searchTerm}
-                    onViewProfile={(provider) => {
-                        setActiveProvider(provider);
-                        setModalMode('profile');
-                    }}
-                    onMakeEnquiry={(provider) => {
-                        setActiveProvider(provider);
-                        setModalMode('enquiry');
-                    }}
-                />
+                        <CategoryList onSelectCategory={handleSelectCategory} />
 
-                <ProviderCTA onOpenRegisterModal={() => setIsRegisterModalOpen(true)} />
+                        <ProviderSearch
+                            key={searchTerm}
+                            initialSearchTerm={searchTerm}
+                            onViewProfile={(provider) => {
+                                setActiveProvider(provider);
+                                setModalMode('profile');
+                            }}
+                            onMakeEnquiry={(provider) => {
+                                setActiveProvider(provider);
+                                setModalMode('enquiry');
+                            }}
+                        />
+
+                        <ProviderCTA onOpenRegisterModal={() => setIsRegisterModalOpen(true)} />
+                    </>
+                )}
             </main>
 
             <Footer />
@@ -78,6 +109,13 @@ export function App() {
             <ProviderRegisterModal
                 isOpen={isRegisterModalOpen}
                 onClose={() => setIsRegisterModalOpen(false)}
+            />
+
+            <ProviderLoginModal
+                isOpen={isLoginModalOpen}
+                onClose={() => setIsLoginModalOpen(false)}
+                onLoginSuccess={handleLoginSuccess}
+                onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
             />
         </div>
     );

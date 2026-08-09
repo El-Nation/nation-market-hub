@@ -43,7 +43,7 @@ CREATE TABLE provider_profiles (
 );
 
 -- Service Enquiries Table (Customer Requests routed to Providers)
-CREATE TABLE service_enquiries (
+CREATE TABLE IF NOT EXISTS service_enquiries (
     id SERIAL PRIMARY KEY,
     provider_id INT NOT NULL REFERENCES provider_profiles(id) ON DELETE CASCADE,
     customer_name VARCHAR(150) NOT NULL,
@@ -56,12 +56,12 @@ CREATE TABLE service_enquiries (
 );
 
 -- Indexes for performance when searching and filtering
-CREATE INDEX idx_categories_slug ON categories(slug);
-CREATE INDEX idx_services_slug ON services(slug);
-CREATE INDEX idx_services_category_id ON services(category_id);
-CREATE INDEX idx_providers_category_id ON provider_profiles(category_id);
-CREATE INDEX idx_providers_status ON provider_profiles(status);
-CREATE INDEX idx_providers_location ON provider_profiles(location);
-CREATE INDEX idx_enquiries_provider_id ON service_enquiries(provider_id);
-CREATE INDEX idx_enquiries_status ON service_enquiries(status);
+CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
+CREATE INDEX IF NOT EXISTS idx_services_slug ON services(slug);
+CREATE INDEX IF NOT EXISTS idx_services_category_id ON services(category_id);
+CREATE INDEX IF NOT EXISTS idx_providers_category_id ON provider_profiles(category_id);
+CREATE INDEX IF NOT EXISTS idx_providers_status ON provider_profiles(status);
+CREATE INDEX IF NOT EXISTS idx_providers_location ON provider_profiles(location);
+CREATE INDEX IF NOT EXISTS idx_enquiries_provider_id ON service_enquiries(provider_id);
+CREATE INDEX IF NOT EXISTS idx_enquiries_status ON service_enquiries(status);
 

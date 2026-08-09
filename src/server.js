@@ -259,6 +259,62 @@ app.post("/api/providers/register", async (req, res) => {
     }
 });
 
+// POST /api/providers/login - Provider Login Endpoint
+app.post("/api/providers/login", async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({
+            success: false,
+            message: "Please provide both email and password.",
+        });
+    }
+
+    try {
+        const queryText = `
+            SELECT p.*, c.name as category_name, c.slug as category_slug
+            FROM provider_profiles p
+            JOIN categories c ON p.category_id = c.id
+            WHERE LOWER(p.email) = LOWER($1);
+        `;
+        const result = await db.query(queryText, [email.trim()]);
+
+        if (result.rows.length === 0) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid email address or password.",
+            });
+        }
+
+        const provider = result.rows[0];
+
+        // Verify password using bcrypt
+        const passwordMatches = await bcrypt.compare(password, provider.password_hash);
+        if (!passwordMatches) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid email address or password.",
+            });
+        }
+
+        // Exclude password hash from response
+        const { password_hash, ...providerProfile } = provider;
+
+        res.json({
+            success: true,
+            message: "Login successful!",
+            provider: providerProfile,
+        });
+    } catch (error) {
+        console.error("Provider login error:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Server error authenticating service provider",
+            error: error.message,
+        });
+    }
+});
+
 // POST /api/enquiries - Submit a new Customer Service Request / Enquiry
 app.post("/api/enquiries", async (req, res) => {
     const { provider_id, customer_name, customer_phone, customer_email, location, service_description } = req.body;

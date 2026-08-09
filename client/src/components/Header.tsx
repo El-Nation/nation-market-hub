@@ -1,16 +1,36 @@
 import React from 'react';
-import { Store, UserCheck } from 'lucide-react';
+import type { Provider } from '../types';
+import { Store, UserCheck, LogIn, LayoutDashboard, LogOut } from 'lucide-react';
 
 interface HeaderProps {
-    onOpenRegisterModal?: () => void;
+    currentProvider: Provider | null;
+    viewingDashboard: boolean;
+    onToggleDashboard: () => void;
+    onOpenRegisterModal: () => void;
+    onOpenLoginModal: () => void;
+    onLogout: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenRegisterModal }) => {
+export const Header: React.FC<HeaderProps> = ({
+    currentProvider,
+    viewingDashboard,
+    onToggleDashboard,
+    onOpenRegisterModal,
+    onOpenLoginModal,
+    onLogout,
+}) => {
     return (
         <header className="header">
             <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 {/* Brand Logo */}
-                <a href="#" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
+                <a
+                    href="#"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        if (viewingDashboard) onToggleDashboard();
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}
+                >
                     <div style={{ background: 'var(--accent-gradient)', padding: '0.5rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(2, 132, 199, 0.25)' }}>
                         <Store size={22} color="#ffffff" strokeWidth={2.5} />
                     </div>
@@ -24,19 +44,47 @@ export const Header: React.FC<HeaderProps> = ({ onOpenRegisterModal }) => {
                     </div>
                 </a>
 
-                {/* Right Side CTA */}
+                {/* Right Side Navigation */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <a href="#providers-search" style={{ color: '#475569', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600 }}>
-                        Browse Services
-                    </a>
-                    <button
-                        className="btn-primary"
-                        onClick={onOpenRegisterModal}
-                        style={{ padding: '0.55rem 1.1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                    >
-                        <UserCheck size={16} />
-                        Join as Provider
-                    </button>
+                    {currentProvider ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <button
+                                className="btn-secondary"
+                                onClick={onToggleDashboard}
+                                style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}
+                            >
+                                <LayoutDashboard size={16} style={{ color: '#0284c7' }} />
+                                {viewingDashboard ? 'Marketplace' : 'My Dashboard'}
+                            </button>
+                            <button
+                                className="btn-secondary"
+                                onClick={onLogout}
+                                style={{ padding: '0.5rem 0.8rem', fontSize: '0.85rem', color: '#b91c1c', borderColor: '#fca5a5', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                            >
+                                <LogOut size={15} />
+                                Logout
+                            </button>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <button
+                                className="btn-secondary"
+                                onClick={onOpenLoginModal}
+                                style={{ padding: '0.55rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}
+                            >
+                                <LogIn size={16} />
+                                Provider Login
+                            </button>
+                            <button
+                                className="btn-primary"
+                                onClick={onOpenRegisterModal}
+                                style={{ padding: '0.55rem 1.1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                            >
+                                <UserCheck size={16} />
+                                Join as Provider
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </header>
