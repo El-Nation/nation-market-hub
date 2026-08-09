@@ -6,8 +6,9 @@ import { CategoryServicesModal } from './components/CategoryServicesModal';
 import { ProviderSearch } from './components/ProviderSearch';
 import { ProviderModal } from './components/ProviderModal';
 import { ProviderRegisterModal } from './components/ProviderRegisterModal';
-import { ProviderLoginModal } from './components/ProviderLoginModal';
+import { LoginModal } from './components/LoginModal';
 import { ProviderDashboard } from './components/ProviderDashboard';
+import { AdminDashboard } from './components/AdminDashboard';
 import { ProviderCTA } from './components/ProviderCTA';
 import { Footer } from './components/Footer';
 import type { Provider, Category } from './types';
@@ -23,6 +24,10 @@ export function App() {
     // Provider Authentication State
     const [currentProvider, setCurrentProvider] = useState<Provider | null>(null);
     const [viewingDashboard, setViewingDashboard] = useState<boolean>(false);
+
+    // Admin Authentication State
+    const [currentAdmin, setCurrentAdmin] = useState<{ name: string; email: string; role: string } | null>(null);
+    const [viewingAdminDashboard, setViewingAdminDashboard] = useState<boolean>(false);
 
     const handleHeroSearch = (term: string) => {
         setSearchTerm(term);
@@ -44,9 +49,22 @@ export function App() {
         }
     };
 
-    const handleLoginSuccess = (provider: Provider) => {
-        setCurrentProvider(provider);
-        setViewingDashboard(true);
+    const handleUnifiedLoginSuccess = (role: 'admin' | 'provider' | 'customer', user: any) => {
+        if (role === 'admin') {
+            setCurrentAdmin(user);
+            setViewingAdminDashboard(true);
+            setCurrentProvider(null);
+            setViewingDashboard(false);
+        } else if (role === 'provider') {
+            setCurrentProvider(user);
+            setViewingDashboard(true);
+            setCurrentAdmin(null);
+            setViewingAdminDashboard(false);
+        } else {
+            // Future customer role flow
+            setViewingDashboard(false);
+            setViewingAdminDashboard(false);
+        }
     };
 
     const handleLogout = () => {
@@ -54,19 +72,36 @@ export function App() {
         setViewingDashboard(false);
     };
 
+    const handleAdminLogout = () => {
+        setCurrentAdmin(null);
+        setViewingAdminDashboard(false);
+    };
+
     return (
         <div className="app-layout" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
             <Header
                 currentProvider={currentProvider}
                 viewingDashboard={viewingDashboard}
-                onToggleDashboard={() => setViewingDashboard(!viewingDashboard)}
+                onToggleDashboard={() => {
+                    setViewingDashboard(!viewingDashboard);
+                    setViewingAdminDashboard(false);
+                }}
+                currentAdmin={currentAdmin}
+                viewingAdminDashboard={viewingAdminDashboard}
+                onToggleAdminDashboard={() => {
+                    setViewingAdminDashboard(!viewingAdminDashboard);
+                    setViewingDashboard(false);
+                }}
                 onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
                 onOpenLoginModal={() => setIsLoginModalOpen(true)}
                 onLogout={handleLogout}
+                onAdminLogout={handleAdminLogout}
             />
 
             <main style={{ flex: 1 }}>
-                {viewingDashboard && currentProvider ? (
+                {viewingAdminDashboard && currentAdmin ? (
+                    <AdminDashboard admin={currentAdmin} onLogout={handleAdminLogout} />
+                ) : viewingDashboard && currentProvider ? (
                     <ProviderDashboard provider={currentProvider} onLogout={handleLogout} />
                 ) : (
                     <>
@@ -111,10 +146,10 @@ export function App() {
                 onClose={() => setIsRegisterModalOpen(false)}
             />
 
-            <ProviderLoginModal
+            <LoginModal
                 isOpen={isLoginModalOpen}
                 onClose={() => setIsLoginModalOpen(false)}
-                onLoginSuccess={handleLoginSuccess}
+                onLoginSuccess={handleUnifiedLoginSuccess}
                 onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
             />
         </div>

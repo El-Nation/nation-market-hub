@@ -527,6 +527,211 @@ app.post("/api/providers/:id/reviews", async (req, res) => {
     }
 });
 
+// POST /api/auth/login - Unified Authentication Endpoint (Admin, Provider, Customer)
+app.post("/api/auth/login", async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({
+            success: false,
+            message: "Email and password are required.",
+        });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    // 1. Check Administrator Credentials
+    const adminEmail = (process.env.ADMIN_EMAIL || "admin@nationhub.com").toLowerCase();
+    const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+
+    if (cleanEmail === adminEmail && password === adminPassword) {
+        return res.json({
+            success: true,
+            role: "admin",
+            message: "Admin authentication successful!",
+            user: {
+                name: "System Administrator",
+                email: adminEmail,
+                role: "Super Admin",
+            },
+        });
+    }
+
+    // 2. Check Service Provider Credentials in Database
+    try {
+        const result = await db.query(
+            `SELECT p.*, c.name as category_name 
+             FROM provider_profiles p 
+             JOIN categories c ON p.category_id = c.id 
+             WHERE LOWER(p.email) = $1;`,
+            [cleanEmail]
+        );
+
+        if (result.rows.length > 0) {
+            const provider = result.rows[0];
+            const isMatch = await bcrypt.compare(password, provider.password_hash);
+            
+            if (isMatch) {
+                const { password_hash, ...safeProvider } = provider;
+                return res.json({
+                    success: true,
+                    role: "provider",
+                    message: "Provider login successful!",
+                    user: safeProvider,
+                });
+            }
+        }
+    } catch (dbErr) {
+        console.error("Error during provider auth check:", dbErr.message);
+    }
+
+    return res.status(401).json({
+        success: false,
+        message: "Invalid email or password. Please check your credentials.",
+    });
+});
+
+// POST /api/admin/login - Platform Admin Authentication
+app.post("/api/admin/login", async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({
+            success: false,
+            message: "Email and password are required.",
+        });
+    }
+
+    const adminEmail = (process.env.ADMIN_EMAIL || "admin@nationhub.com").toLowerCase();
+    const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+
+    if (email.toLowerCase() === adminEmail && password === adminPassword) {
+        return res.json({
+            success: true,
+            message: "Admin authentication successful!",
+            admin: {
+                name: "System Administrator",
+                email: adminEmail,
+                role: "Super Admin",
+            },
+        });
+    }
+
+    return res.status(401).json({
+        success: false,
+        message: "Invalid admin credentials.",
+    });
+});
+
+// GET /api/admin/providers - Fetch all provider applications for moderation
+app.get("/api/admin/providers", async (req, res) => {
+    const { status } = req.query;
+
+    let queryText = `
+        SELECT 
+            p.*, 
+            c.name as category_name,
+            COUNT(r.id)::int as review_count
+        FROM provider_profiles p
+        JOIN categories c ON p.category_id = c.id
+        LEFT JOIN provider_reviews r ON p.id = r.provider_id
+    `;
+    const queryValues = [];
+
+    if (status && status !== 'all') {
+        queryText += ` WHERE p.status = $1`;
+        queryValues.push(status);
+    }
+
+    queryText += ` GROUP BY p.id, c.id ORDER BY p.created_at DESC;`;
+
+    try {
+        const result = await db.query(queryText, queryValues);
+        res.json({
+            success: true,
+            count: result.rows.length,
+            data: result.rows,
+        });
+    } catch (error) {
+        console.error("Error fetching admin providers:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Server error fetching admin provider list",
+        });
+    }
+});
+
+// PATCH /api/admin/providers/:id/status - Approve, Reject, or Suspend provider profile
+app.patch("/api/admin/providers/:id/status", async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ["pending", "approved", "rejected", "suspended"];
+    if (!status || !validStatuses.includes(status)) {
+        return res.status(400).json({
+            success: false,
+            message: `Invalid status. Allowed values: ${validStatuses.join(", ")}`,
+        });
+    }
+
+    try {
+        const updateQuery = `
+            UPDATE provider_profiles 
+            SET status = $1 
+            WHERE id = $2 
+            RETURNING *;
+        `;
+        const result = await db.query(updateQuery, [status, id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Provider not found",
+            });
+        }
+
+        res.json({
+            success: true,
+            message: `Provider status successfully updated to ${status}`,
+            provider: result.rows[0],
+        });
+    } catch (error) {
+        console.error("Error updating provider status:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Server error updating provider status",
+        });
+    }
+});
+
+// GET /api/admin/stats - Platform Overview Health & Summary Metrics
+app.get("/api/admin/stats", async (req, res) => {
+    try {
+        const totalProvidersRes = await db.query("SELECT COUNT(*)::int as count FROM provider_profiles;");
+        const pendingProvidersRes = await db.query("SELECT COUNT(*)::int as count FROM provider_profiles WHERE status = 'pending';");
+        const approvedProvidersRes = await db.query("SELECT COUNT(*)::int as count FROM provider_profiles WHERE status = 'approved';");
+        const totalEnquiriesRes = await db.query("SELECT COUNT(*)::int as count FROM service_enquiries;");
+        const totalReviewsRes = await db.query("SELECT COUNT(*)::int as count FROM provider_reviews;");
+
+        res.json({
+            success: true,
+            stats: {
+                total_providers: totalProvidersRes.rows[0].count,
+                pending_providers: pendingProvidersRes.rows[0].count,
+                approved_providers: approvedProvidersRes.rows[0].count,
+                total_enquiries: totalEnquiriesRes.rows[0].count,
+                total_reviews: totalReviewsRes.rows[0].count,
+            },
+        });
+    } catch (error) {
+        console.error("Error fetching admin stats:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Server error fetching admin statistics",
+        });
+    }
+});
+
 // Start the server and test database connectivity
 app.listen(PORT, async () => {
     console.log(`Server running on http://localhost:${PORT}`);
