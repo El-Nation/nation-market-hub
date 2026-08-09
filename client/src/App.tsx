@@ -204,6 +204,7 @@ export function App() {
             <ProviderModal
                 provider={activeProvider}
                 initialMode={modalMode}
+                currentCustomer={currentCustomer}
                 onClose={() => setActiveProvider(null)}
             />
 

@@ -5,26 +5,27 @@ import { X, Star, MapPin, Award, CheckCircle2, Send, AlertCircle, Loader2, Messa
 interface ProviderModalProps {
     provider: Provider | null;
     initialMode?: 'profile' | 'enquiry';
+    currentCustomer?: { id: number; full_name: string; email: string; phone: string } | null;
     onClose: () => void;
 }
 
-export const ProviderModal: React.FC<ProviderModalProps> = ({ provider, initialMode = 'profile', onClose }) => {
+export const ProviderModal: React.FC<ProviderModalProps> = ({ provider, initialMode = 'profile', currentCustomer, onClose }) => {
     if (!provider) return null;
 
     const [mode, setMode] = useState<'profile' | 'enquiry' | 'review' | 'success'>(initialMode);
     const [profileTab, setProfileTab] = useState<'about' | 'reviews'>('about');
 
     // Customer Enquiry Form State
-    const [customerName, setCustomerName] = useState('');
-    const [customerPhone, setCustomerPhone] = useState('');
-    const [customerEmail, setCustomerEmail] = useState('');
+    const [customerName, setCustomerName] = useState(currentCustomer?.full_name || '');
+    const [customerPhone, setCustomerPhone] = useState(currentCustomer?.phone || '');
+    const [customerEmail, setCustomerEmail] = useState(currentCustomer?.email || '');
     const [location, setLocation] = useState('Benin City');
     const [description, setDescription] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // Customer Review Form State
-    const [reviewerName, setReviewerName] = useState('');
+    const [reviewerName, setReviewerName] = useState(currentCustomer?.full_name || '');
     const [rating, setRating] = useState<number>(5);
     const [reviewText, setReviewText] = useState('');
     const [reviews, setReviews] = useState<Review[]>([]);

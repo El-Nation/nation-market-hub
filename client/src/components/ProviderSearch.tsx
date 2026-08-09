@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { Provider, Category } from '../types';
 import { ProviderCard } from './ProviderCard';
-import { Search, MapPin, Filter, Loader2, AlertCircle } from 'lucide-react';
+import { Search, MapPin, Filter, Loader2, AlertCircle, Star, ArrowUpDown } from 'lucide-react';
 
 interface ProviderSearchProps {
     initialSearchTerm?: string;
@@ -19,6 +19,8 @@ export const ProviderSearch: React.FC<ProviderSearchProps> = ({ initialSearchTer
     const [searchTerm, setSearchTerm] = useState<string>(initialSearchTerm);
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [locationFilter, setLocationFilter] = useState<string>('');
+    const [minRating, setMinRating] = useState<string>('');
+    const [sortOrder, setSortOrder] = useState<string>('rating_desc');
 
     // Fetch Categories for dropdown
     useEffect(() => {
@@ -39,6 +41,8 @@ export const ProviderSearch: React.FC<ProviderSearchProps> = ({ initialSearchTer
             if (searchTerm) queryParams.append('search', searchTerm);
             if (selectedCategory) queryParams.append('category', selectedCategory);
             if (locationFilter) queryParams.append('location', locationFilter);
+            if (minRating) queryParams.append('min_rating', minRating);
+            if (sortOrder) queryParams.append('sort', sortOrder);
 
             const response = await fetch(`http://localhost:5000/api/providers?${queryParams.toString()}`);
             if (!response.ok) throw new Error(`API response error: ${response.status}`);
@@ -58,7 +62,7 @@ export const ProviderSearch: React.FC<ProviderSearchProps> = ({ initialSearchTer
 
     useEffect(() => {
         fetchProviders();
-    }, [selectedCategory]);
+    }, [selectedCategory, minRating, sortOrder]);
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -72,13 +76,14 @@ export const ProviderSearch: React.FC<ProviderSearchProps> = ({ initialSearchTer
                     Find Verified Service Providers
                 </h2>
                 <p style={{ color: '#475569', fontSize: '0.95rem' }}>
-                    Search by skill, business name, or location. Contact providers directly without prior account creation.
+                    Search by skill, business name, location, or rating. Contact providers directly or request services.
                 </p>
             </div>
 
             {/* Search Filter Controls */}
             <div className="glass-panel" style={{ padding: '1.25rem', marginBottom: '2.5rem', background: '#ffffff', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
-                <form onSubmit={handleSearchSubmit} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '1rem', alignItems: 'center' }}>
+                <form onSubmit={handleSearchSubmit} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr auto', gap: '0.85rem', alignItems: 'center' }}>
+                    {/* Keyword search input */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.8rem' }}>
                         <Search size={18} style={{ color: '#0284c7' }} />
                         <input
@@ -90,6 +95,7 @@ export const ProviderSearch: React.FC<ProviderSearchProps> = ({ initialSearchTer
                         />
                     </div>
 
+                    {/* Category Dropdown */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.8rem' }}>
                         <Filter size={18} style={{ color: '#0284c7' }} />
                         <select
@@ -106,19 +112,50 @@ export const ProviderSearch: React.FC<ProviderSearchProps> = ({ initialSearchTer
                         </select>
                     </div>
 
+                    {/* Location Input */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.8rem' }}>
                         <MapPin size={18} style={{ color: '#0284c7' }} />
                         <input
                             type="text"
-                            placeholder="Location (e.g. Benin City)"
+                            placeholder="Location (e.g. Benin)"
                             value={locationFilter}
                             onChange={(e) => setLocationFilter(e.target.value)}
                             style={{ width: '100%', background: 'transparent', border: 'none', color: '#0f172a', outline: 'none', fontSize: '0.9rem' }}
                         />
                     </div>
 
-                    <button type="submit" className="btn-primary" style={{ padding: '0.65rem 1.5rem', borderRadius: '8px', fontSize: '0.9rem' }}>
-                        Apply Filters
+                    {/* Min Rating Filter */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.8rem' }}>
+                        <Star size={18} style={{ color: '#d97706' }} />
+                        <select
+                            value={minRating}
+                            onChange={(e) => setMinRating(e.target.value)}
+                            style={{ width: '100%', background: 'transparent', border: 'none', color: '#0f172a', outline: 'none', fontSize: '0.88rem', cursor: 'pointer' }}
+                        >
+                            <option value="">All Ratings</option>
+                            <option value="4.5">★ 4.5 & above</option>
+                            <option value="4.0">★ 4.0 & above</option>
+                            <option value="3.0">★ 3.0 & above</option>
+                        </select>
+                    </div>
+
+                    {/* Sort Dropdown */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem 0.8rem' }}>
+                        <ArrowUpDown size={18} style={{ color: '#0284c7' }} />
+                        <select
+                            value={sortOrder}
+                            onChange={(e) => setSortOrder(e.target.value)}
+                            style={{ width: '100%', background: 'transparent', border: 'none', color: '#0f172a', outline: 'none', fontSize: '0.88rem', cursor: 'pointer' }}
+                        >
+                            <option value="rating_desc">Highest Rated</option>
+                            <option value="experience_desc">Most Experienced</option>
+                            <option value="newest">Newest First</option>
+                            <option value="reviews_desc">Most Reviews</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" className="btn-primary" style={{ padding: '0.65rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem' }}>
+                        Search
                     </button>
                 </form>
             </div>
@@ -138,7 +175,7 @@ export const ProviderSearch: React.FC<ProviderSearchProps> = ({ initialSearchTer
                 <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center', background: '#ffffff' }}>
                     <p style={{ color: '#0f172a', fontSize: '1.1rem', fontWeight: 700 }}>No providers found matching your search.</p>
                     <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                        Try clearing search keywords or selecting a different category filter.
+                        Try clearing search keywords or adjusting your category and rating filters.
                     </p>
                     <button
                         className="btn-secondary"
@@ -147,6 +184,8 @@ export const ProviderSearch: React.FC<ProviderSearchProps> = ({ initialSearchTer
                             setSearchTerm('');
                             setSelectedCategory('');
                             setLocationFilter('');
+                            setMinRating('');
+                            setSortOrder('rating_desc');
                             fetchProviders();
                         }}
                     >

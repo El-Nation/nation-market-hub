@@ -139,7 +139,7 @@ app.get("/api/categories/:slug/services", async (req, res) => {
 
 // GET /api/providers - Search and filter service providers
 app.get("/api/providers", async (req, res) => {
-    const { search, category, location } = req.query;
+    const { search, category, location, min_rating, sort } = req.query;
 
     try {
         let queryValues = [];
@@ -147,7 +147,7 @@ app.get("/api/providers", async (req, res) => {
         let paramIndex = 1;
 
         // Filter by category ID or Category slug if provided
-        if (category) {
+        if (category && category !== 'all') {
             if (!isNaN(Number(category))) {
                 conditions.push(`p.category_id = $${paramIndex}`);
                 queryValues.push(Number(category));
@@ -160,9 +160,16 @@ app.get("/api/providers", async (req, res) => {
         }
 
         // Filter by location
-        if (location) {
+        if (location && location !== 'all') {
             conditions.push(`LOWER(p.location) LIKE $${paramIndex}`);
             queryValues.push(`%${location.toLowerCase()}%`);
+            paramIndex++;
+        }
+
+        // Filter by minimum rating
+        if (min_rating && !isNaN(Number(min_rating))) {
+            conditions.push(`p.rating >= $${paramIndex}`);
+            queryValues.push(Number(min_rating));
             paramIndex++;
         }
 
@@ -180,6 +187,15 @@ app.get("/api/providers", async (req, res) => {
 
         const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
+        let orderBy = "p.rating DESC, p.created_at DESC";
+        if (sort === "experience_desc") {
+            orderBy = "p.experience_years DESC, p.rating DESC";
+        } else if (sort === "newest") {
+            orderBy = "p.created_at DESC";
+        } else if (sort === "reviews_desc") {
+            orderBy = "review_count DESC, p.rating DESC";
+        }
+
         const queryText = `
             SELECT 
                 p.id, p.full_name, p.email, p.phone, p.business_name, 
@@ -193,7 +209,7 @@ app.get("/api/providers", async (req, res) => {
             LEFT JOIN provider_reviews r ON p.id = r.provider_id
             ${whereClause}
             GROUP BY p.id, c.id
-            ORDER BY p.rating DESC, p.created_at DESC;
+            ORDER BY ${orderBy};
         `;
 
         const result = await db.query(queryText, queryValues);
