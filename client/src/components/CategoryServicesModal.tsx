@@ -26,7 +26,7 @@ export const CategoryServicesModal: React.FC<CategoryServicesModalProps> = ({ ca
             })
             .then((data) => {
                 if (data.success) {
-                    setServices(data.data.services || []);
+                    setServices(data.services || []);
                 } else {
                     throw new Error(data.message || 'Failed to load category services');
                 }

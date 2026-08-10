@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import type { Category } from '../types';
 import { 
-    Wrench, Laptop, BookOpen, Scissors, Utensils, 
-    Car, Briefcase, Heart, ArrowUpRight, Loader2, AlertCircle 
+    Wrench, Monitor, GraduationCap, Sparkles, ChefHat, 
+    Car, Briefcase, Activity, ArrowUpRight, Loader2, AlertCircle 
 } from 'lucide-react';
 
-// Icon mapper for dynamic category icons
-const iconMap: Record<string, React.ReactNode> = {
-    Wrench: <Wrench size={24} />,
-    Laptop: <Laptop size={24} />,
-    BookOpen: <BookOpen size={24} />,
-    Scissors: <Scissors size={24} />,
-    Utensils: <Utensils size={24} />,
-    Car: <Car size={24} />,
-    Briefcase: <Briefcase size={24} />,
-    Heart: <Heart size={24} />,
+// Maps the old database string icon identifiers to the new aesthetic look
+const categoryStyles: Record<string, { bg: string, color: string, Icon: React.ElementType }> = {
+    'Wrench': { bg: '#ffedd5', color: '#ea580c', Icon: Wrench },
+    'Laptop': { bg: '#e0e7ff', color: '#4f46e5', Icon: Monitor },
+    'BookOpen': { bg: '#e0f2fe', color: '#0284c7', Icon: GraduationCap },
+    'Scissors': { bg: '#fce7f3', color: '#db2777', Icon: Sparkles },
+    'Utensils': { bg: '#dcfce7', color: '#15803d', Icon: ChefHat },
+    'Car': { bg: '#ecfccb', color: '#4d7c0f', Icon: Car },
+    'Briefcase': { bg: '#fef3c7', color: '#d97706', Icon: Briefcase },
+    'Heart': { bg: '#f3e8ff', color: '#9333ea', Icon: Activity },
 };
 
 interface CategoryListProps {
@@ -75,40 +75,89 @@ export const CategoryList: React.FC<CategoryListProps> = ({ onSelectCategory }) 
     }
 
     return (
-        <section id="categories" className="categories-section">
+        <section id="categories" style={{ padding: '4rem 0', background: '#f8fafc' }}>
             <div className="container">
-                <div className="section-header">
-                    <div>
-                        <h2 className="section-title">Explore Categories</h2>
-                        <p style={{ color: '#94a3b8', fontSize: '0.95rem' }}>
-                            Find verified skilled professionals across 8 core service categories
-                        </p>
-                    </div>
+                <div style={{ marginBottom: '2.5rem' }}>
+                    <h2 style={{ fontSize: '2.2rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem' }}>Explore Categories</h2>
+                    <p style={{ color: '#64748b', fontSize: '1.05rem' }}>
+                        Find verified skilled professionals across 8 core service categories
+                    </p>
                 </div>
 
-                <div className="categories-grid">
-                    {categories.map((cat) => (
-                        <div
-                            key={cat.id}
-                            className="glass-panel category-card"
-                            style={{ cursor: 'pointer' }}
-                            onClick={() => onSelectCategory && onSelectCategory(cat)}
-                        >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                <div className="category-icon-wrapper">
-                                    {iconMap[cat.icon] || <Wrench size={24} />}
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
+                    gap: '1.25rem' 
+                }}>
+                    {categories.map((cat) => {
+                        const styleConfig = categoryStyles[cat.icon] || categoryStyles['Wrench'];
+                        const IconComp = styleConfig.Icon;
+
+                        return (
+                            <div
+                                key={cat.id}
+                                style={{ 
+                                    background: '#ffffff', 
+                                    border: '1px solid #e2e8f0', 
+                                    borderRadius: '16px', 
+                                    padding: '1.75rem', 
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -2px rgba(0, 0, 0, 0.02)',
+                                    transition: 'all 0.2s ease-in-out',
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-4px)';
+                                    e.currentTarget.style.boxShadow = '0 12px 20px -8px rgba(0, 0, 0, 0.08)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -2px rgba(0, 0, 0, 0.02)';
+                                }}
+                                onClick={() => onSelectCategory && onSelectCategory(cat)}
+                            >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                                    <div style={{
+                                        width: '64px',
+                                        height: '64px',
+                                        borderRadius: '50%',
+                                        background: styleConfig.bg,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: styleConfig.color
+                                    }}>
+                                        <IconComp size={32} strokeWidth={1.5} />
+                                    </div>
+                                    <div style={{ 
+                                        width: '28px', height: '28px', 
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                        color: '#64748b' 
+                                    }}>
+                                        <ArrowUpRight size={20} strokeWidth={2} />
+                                    </div>
                                 </div>
-                                <ArrowUpRight size={18} style={{ color: '#64748b' }} />
-                            </div>
 
-                            <h3 className="category-name">{cat.name}</h3>
-                            <p className="category-desc">{cat.description}</p>
+                                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.6rem' }}>
+                                    {cat.name}
+                                </h3>
+                                <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: 1.5, flex: 1, marginBottom: '1.5rem' }}>
+                                    {cat.description}
+                                </p>
 
-                            <div className="category-meta">
-                                <span>{cat.service_count || 0} sub-services available</span>
+                                <div>
+                                    <span style={{ 
+                                        color: '#2563eb', 
+                                        fontSize: '0.85rem', 
+                                        fontWeight: 600 
+                                    }}>
+                                        {cat.service_count || 0} sub-services available
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         </section>
