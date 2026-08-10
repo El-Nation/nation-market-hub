@@ -518,8 +518,135 @@ ${EMAIL_FOOTER_TEXT}
     }
 };
 
+/**
+ * Send Password Reset email notification to User
+ */
+const sendPasswordResetEmail = async ({ toEmail, userName, resetUrl, resetToken }) => {
+    if (!toEmail) return { success: false, reason: 'no_recipient_email' };
+
+    const fromAddress = process.env.SMTP_FROM || '"Nation Market Hub" <no-reply@nationmarkethub.com>';
+    const subject = '[Nation Market Hub] Password Reset Request';
+
+    const textContent = `
+Hello ${userName || 'Valued User'},
+
+We received a request to reset your password on Nation Market Hub.
+
+Your Password Reset Token: ${resetToken}
+
+Click the link below or paste it into your browser to reset your password:
+${resetUrl}
+
+This link and token will expire in 1 hour. If you did not request a password reset, please ignore this email.
+
+${EMAIL_FOOTER_TEXT}
+    `.trim();
+
+    const logoHtml = getLogoHeaderHtml();
+
+    const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Password Reset Request</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-font-smoothing: antialiased;">
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f1f5f9; padding: 30px 10px;">
+            <tr>
+                <td align="center">
+                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0;">
+                        
+                        <!-- Header Banner -->
+                        <tr>
+                            <td style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 26px 20px; text-align: center; border-bottom: 3px solid #0284c7;">
+                                ${logoHtml}
+                                <span style="display: inline-block; color: #38bdf8; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;">
+                                    Account Security Notification
+                                </span>
+                            </td>
+                        </tr>
+
+                        <!-- Content Area -->
+                        <tr>
+                            <td style="padding: 30px 28px 20px 28px;">
+                                <h2 style="color: #0284c7; font-size: 20px; font-weight: 800; margin: 0 0 14px 0;">
+                                    🔒 Password Reset Request
+                                </h2>
+                                
+                                <p style="color: #334155; font-size: 15px; line-height: 1.6; margin: 0 0 20px 0;">
+                                    Hello <strong>${userName || 'Valued User'}</strong>,
+                                </p>
+                                <p style="color: #475569; font-size: 14px; line-height: 1.6; margin: 0 0 24px 0;">
+                                    We received a request to reset your password on <strong>Nation Market Hub</strong>. Click the button below or use your secure token to set a new password:
+                                </p>
+
+                                <!-- Reset Token Box -->
+                                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; border: 1px dashed #0284c7; border-radius: 10px; padding: 18px; margin-bottom: 24px; text-align: center;">
+                                    <tr>
+                                        <td>
+                                            <div style="font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">
+                                                Your Secure Password Reset Token
+                                            </div>
+                                            <div style="font-family: monospace; font-size: 16px; font-weight: 800; color: #0284c7; word-break: break-all;">
+                                                ${resetToken}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <!-- CTA Button -->
+                                <div style="text-align: center; margin: 30px 0 20px 0;">
+                                    <a href="${resetUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; font-weight: 700; font-size: 15px; text-decoration: none; padding: 14px 32px; border-radius: 8px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);">
+                                        Reset Password Now →
+                                    </a>
+                                </div>
+
+                                <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
+                                    This link and token will expire in <strong>1 hour</strong>. If you did not request a password reset, you can safely ignore this email.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <!-- Always Rendered Base Footer -->
+                        ${EMAIL_FOOTER_HTML}
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    `;
+
+    try {
+        const transporter = createTransporter();
+        if (!transporter) {
+            console.log(`\n📧 [EMAIL FALLBACK / DEV LOG] Password Reset to (${toEmail}):\nSubject: ${subject}\n${textContent}\n`);
+            return { success: true, mode: 'fallback_log' };
+        }
+
+        const info = await transporter.sendMail({
+            from: fromAddress,
+            to: toEmail,
+            subject,
+            text: textContent,
+            html: htmlContent,
+            attachments: getAttachments(),
+        });
+
+        console.log(`📧 [EMAIL SENT] Password reset messageId: ${info.messageId} to (${toEmail})`);
+        return { success: true, messageId: info.messageId };
+    } catch (err) {
+        console.error('❌ Error sending password reset email:', err.message);
+        console.log(`\n📧 [EMAIL FALLBACK AFTER ERROR] Password Reset to (${toEmail}):\nSubject: ${subject}\n${textContent}\n`);
+        return { success: false, error: err.message };
+    }
+};
+
 module.exports = {
     sendEnquiryNotificationToProvider,
     sendStatusUpdateNotificationToCustomer,
     sendEnquiryConfirmationToCustomer,
+    sendPasswordResetEmail,
 };

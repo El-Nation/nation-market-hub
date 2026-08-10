@@ -47,5 +47,11 @@ export interface Provider {
     review_count?: number;
     status: 'pending' | 'approved' | 'rejected' | 'suspended';
     avatar_url: string | null;
+    total_requests?: number;
+    pending_requests?: number;
+    accepted_requests?: number;
+    completed_requests?: number;
+    cancelled_requests?: number;
+    average_rating?: number;
     created_at?: string;
 }

@@ -36,8 +36,18 @@ export function App() {
     const [currentCustomer, setCurrentCustomer] = useState<{ id: number; full_name: string; email: string; phone: string; location: string } | null>(null);
     const [viewingCustomerDashboard, setViewingCustomerDashboard] = useState<boolean>(false);
 
-    // Session recovery on app mount
+    // Reset Password URL Token state
+    const [initialResetToken, setInitialResetToken] = useState<string | null>(null);
+
+    // Session recovery and URL token handling on app mount
     useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const resetTokenFromUrl = params.get('reset_token');
+        if (resetTokenFromUrl) {
+            setInitialResetToken(resetTokenFromUrl);
+            setIsLoginModalOpen(true);
+        }
+
         const token = localStorage.getItem('auth_token');
         if (!token) return;
 
@@ -226,6 +236,7 @@ export function App() {
                 onLoginSuccess={handleUnifiedLoginSuccess}
                 onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
                 onOpenCustomerRegisterModal={() => setIsCustomerRegisterModalOpen(true)}
+                initialResetToken={initialResetToken}
             />
         </div>
     );

@@ -13,7 +13,7 @@ interface NotificationItem {
 }
 
 interface NotificationBellProps {
-  userType: 'customer' | 'provider';
+  userType: 'customer' | 'provider' | 'admin';
   userId: string | number;
 }
 
@@ -130,16 +130,23 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ userType, us
           // Find highest notification ID in this payload
           const currentMaxId = list.reduce((max, item) => (item.id > max ? item.id : max), 0);
 
-          // Detect genuinely new unread notification
-          if (!isInitialLoadRef.current && currentMaxId > lastSeenMaxIdRef.current) {
-            const newUnreadItems = list.filter(item => item.id > lastSeenMaxIdRef.current && !item.is_read);
+          // Persistent Tracker across refreshes
+          const storageKey = `notification_last_seen_${userType}_${userId}`;
+          const savedMaxId = parseInt(localStorage.getItem(storageKey) || '0', 10);
+          
+          const maxSeen = Math.max(savedMaxId, lastSeenMaxIdRef.current);
+
+          // Detect genuinely new unread notification higher than any we've ever seen
+          if (!isInitialLoadRef.current && currentMaxId > maxSeen) {
+            const newUnreadItems = list.filter(item => item.id > maxSeen && !item.is_read);
             if (newUnreadItems.length > 0) {
               playNotificationChime(newUnreadItems);
             }
           }
 
-          if (currentMaxId > lastSeenMaxIdRef.current) {
+          if (currentMaxId > maxSeen) {
             lastSeenMaxIdRef.current = currentMaxId;
+            localStorage.setItem(storageKey, currentMaxId.toString());
           }
 
           isInitialLoadRef.current = false;

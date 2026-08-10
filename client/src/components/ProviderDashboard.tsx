@@ -15,11 +15,13 @@ import {
     BarChart3,
     ListFilter,
     Camera,
+    Shield,
 } from 'lucide-react';
 import { ChatModal } from './ChatModal';
 import { NotificationBell } from './NotificationBell';
 import { ProviderAnalytics } from './ProviderAnalytics';
 import { AvatarUploadModal } from './AvatarUploadModal';
+import { SecuritySettingsModal } from './SecuritySettingsModal';
 
 interface Enquiry {
     id: number;
@@ -34,7 +36,7 @@ interface Enquiry {
 }
 
 interface ProviderDashboardProps {
-    provider: Provider;
+    provider: Provider & { two_factor_enabled?: boolean };
     onLogout: () => void;
 }
 
@@ -48,6 +50,11 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
     // Avatar Upload Modal State
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
     const [providerAvatar, setProviderAvatar] = useState<string>(provider.avatar_url || '');
+
+    // Security & Password Modal State
+    const [isSecurityModalOpen, setIsSecurityModalOpen] = useState<boolean>(false);
+    const [is2faActive, setIs2faActive] = useState<boolean>(provider.two_factor_enabled || false);
+    const [providerEmail, setProviderEmail] = useState<string>(provider.email);
 
     const handleSaveAvatar = async (newAvatarUrl: string) => {
         try {
@@ -234,6 +241,15 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
 
                         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                             <NotificationBell userType="provider" userId={provider.id} />
+                            <button
+                                className="btn-secondary"
+                                onClick={() => setIsSecurityModalOpen(true)}
+                                style={{ padding: '0.7rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0284c7', fontSize: '0.9rem' }}
+                                title="Password & Security Settings"
+                            >
+                                <Shield size={16} />
+                                Security
+                            </button>
                             <button
                                 className="btn-secondary"
                                 onClick={fetchEnquiries}
@@ -515,6 +531,17 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
                 onClose={() => setIsAvatarModalOpen(false)}
                 currentAvatar={providerAvatar || provider.avatar_url || ''}
                 onSaveAvatar={handleSaveAvatar}
+            />
+
+            {/* Security Settings Modal */}
+            <SecuritySettingsModal
+                isOpen={isSecurityModalOpen}
+                onClose={() => setIsSecurityModalOpen(false)}
+                userRole="provider"
+                userEmail={providerEmail}
+                is2faEnabled={is2faActive}
+                on2faStatusChange={(active) => setIs2faActive(active)}
+                onEmailUpdated={(newEmail) => setProviderEmail(newEmail)}
             />
             </div>
         </div>

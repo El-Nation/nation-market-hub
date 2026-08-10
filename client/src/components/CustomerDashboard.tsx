@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Clock, CheckCircle2, AlertCircle, Phone, MessageSquare, MapPin, Mail, Calendar, Tag, Camera, X, Check, Image as ImageIcon, Upload } from 'lucide-react';
+import { RefreshCw, Clock, CheckCircle2, AlertCircle, Phone, MessageSquare, MapPin, Mail, Calendar, Tag, Camera, X, Check, Image as ImageIcon, Upload, Shield } from 'lucide-react';
 import { ChatModal } from './ChatModal';
 import { NotificationBell } from './NotificationBell';
+import { SecuritySettingsModal } from './SecuritySettingsModal';
 
 interface ServiceEnquiry {
     id: number;
@@ -31,6 +32,7 @@ interface CustomerDashboardProps {
         location: string;
         avatar_url?: string;
         created_at?: string;
+        two_factor_enabled?: boolean;
     };
     onLogout: () => void;
 }
@@ -57,6 +59,10 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({ customer, 
     const [inputAvatarUrl, setInputAvatarUrl] = useState<string>(customer.avatar_url || '');
     const [savingAvatar, setSavingAvatar] = useState<boolean>(false);
     const [avatarError, setAvatarError] = useState<string | null>(null);
+
+    // Security & Password Modal State
+    const [isSecurityModalOpen, setIsSecurityModalOpen] = useState<boolean>(false);
+    const [is2faActive, setIs2faActive] = useState<boolean>(customer.two_factor_enabled || false);
 
     // Direct Chat Modal State
     const [chatModalState, setChatModalState] = useState<{
@@ -283,6 +289,14 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({ customer, 
 
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                     <NotificationBell userType="customer" userId={currentCustomer.email} />
+                    <button
+                        onClick={() => setIsSecurityModalOpen(true)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', border: '1px solid #cbd5e1', color: '#0284c7', padding: '0.65rem 1.1rem', borderRadius: '10px', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}
+                        title="Password & Security Settings"
+                    >
+                        <Shield size={16} />
+                        Security
+                    </button>
                     <button
                         onClick={fetchCustomerEnquiries}
                         disabled={refreshing}
@@ -582,6 +596,16 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({ customer, 
                     </div>
                 </div>
             )}
+            {/* Security Settings Modal */}
+            <SecuritySettingsModal
+                isOpen={isSecurityModalOpen}
+                onClose={() => setIsSecurityModalOpen(false)}
+                userRole="customer"
+                userEmail={currentCustomer.email}
+                is2faEnabled={is2faActive}
+                on2faStatusChange={(active) => setIs2faActive(active)}
+                onEmailUpdated={(newEmail) => setCurrentCustomer((prev) => ({ ...prev, email: newEmail }))}
+            />
         </div>
     );
 };

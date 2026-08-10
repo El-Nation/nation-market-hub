@@ -1,15 +1,18 @@
 // Load environment variables from .env file
 require("dotenv").config();
 
+const crypto = require("crypto");
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const db = require("./config/db");
+const totp = require("./utils/totp");
 const { 
     sendEnquiryNotificationToProvider, 
     sendStatusUpdateNotificationToCustomer,
-    sendEnquiryConfirmationToCustomer 
+    sendEnquiryConfirmationToCustomer,
+    sendPasswordResetEmail 
 } = require("./utils/mailer");
 
 const app = express();
@@ -310,11 +313,21 @@ app.post("/api/providers/register", async (req, res) => {
         ];
 
         const result = await db.query(insertQuery, queryValues);
+        const newProvider = result.rows[0];
+
+        // REAL EVENT TRIGGER: Notify Admin of new provider registration
+        await createNotification({
+            user_type: 'admin',
+            user_id: 'admin',
+            title: 'New Provider Registration',
+            message: `${newProvider.business_name || newProvider.full_name} registered as a service provider (Pending approval).`,
+            link: '/admin-dashboard'
+        });
 
         res.status(201).json({
             success: true,
             message: "Provider registration successful! Your profile is pending administrator approval before public listing.",
-            provider: result.rows[0],
+            provider: newProvider,
         });
     } catch (error) {
         console.error("Provider registration error:", error.message);
@@ -449,6 +462,15 @@ app.post("/api/enquiries", async (req, res) => {
             title: 'New Service Request!',
             message: `New request from ${newEnquiry.customer_name}: "${newEnquiry.service_description.slice(0, 50)}${newEnquiry.service_description.length > 50 ? '...' : ''}"`,
             link: '/provider-dashboard'
+        });
+
+        // REAL EVENT TRIGGER: Create platform-wide in-app notification for Admin
+        await createNotification({
+            user_type: 'admin',
+            user_id: 'admin',
+            title: 'New Service Request',
+            message: `${newEnquiry.customer_name} submitted a request for ${targetProvider.business_name || targetProvider.full_name}.`,
+            link: '/admin-dashboard'
         });
 
         // Asynchronously dispatch email notification to provider
@@ -591,6 +613,15 @@ app.patch("/api/enquiries/:id/status", authenticateToken, requireRole("provider"
                 serviceDescription: updatedEnquiry.service_description,
             }).catch((err) => console.error("Async customer status email dispatch error:", err));
         }
+
+        // REAL EVENT TRIGGER: Create platform-wide notification for Admin on request status update
+        await createNotification({
+            user_type: 'admin',
+            user_id: 'admin',
+            title: `Request #${id} Status Updated`,
+            message: `Service request #${id} status updated to "${status}".`,
+            link: '/admin-dashboard'
+        });
 
         res.json({
             success: true,
@@ -881,6 +912,15 @@ app.post("/api/enquiries/:id/messages", async (req, res) => {
             }
         }
 
+        // REAL EVENT TRIGGER: Notify Admin of market communication activity
+        await createNotification({
+            user_type: 'admin',
+            user_id: 'admin',
+            title: `New Message in Request #${id}`,
+            message: `${sender_name}: "${message_text.trim().slice(0, 40)}${message_text.trim().length > 40 ? '...' : ''}"`,
+            link: '/admin-dashboard'
+        });
+
         res.status(201).json({
             success: true,
             message: "Message sent successfully!",
@@ -1024,6 +1064,15 @@ app.post("/api/customers/register", async (req, res) => {
         ]);
 
         const customer = result.rows[0];
+
+        // REAL EVENT TRIGGER: Notify Admin of new customer registration
+        await createNotification({
+            user_type: 'admin',
+            user_id: 'admin',
+            title: 'New Customer Registered',
+            message: `${customer.full_name} registered a new customer account (${customer.email}).`,
+            link: '/admin-dashboard'
+        });
 
         // Sign JWT Token
         const token = jwt.sign(
@@ -1185,13 +1234,58 @@ app.post("/api/auth/login", async (req, res) => {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // 1. Check Administrator Credentials
-    const adminEmail = (process.env.ADMIN_EMAIL || "admin@nationhub.com").toLowerCase();
-    const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+    // 1. Check Administrator Credentials (DB first, fallback env)
+    try {
+        const adminResult = await db.query(
+            `SELECT * FROM admins WHERE LOWER(email) = $1;`,
+            [cleanEmail]
+        );
 
-    if (cleanEmail === adminEmail && password === adminPassword) {
+        if (adminResult.rows.length > 0) {
+            const admin = adminResult.rows[0];
+            const isMatch = await bcrypt.compare(password, admin.password_hash);
+            if (isMatch) {
+                if (admin.two_factor_enabled) {
+                    const tempToken = jwt.sign(
+                        { tempUserId: admin.id, role: "admin", email: admin.email, is2FA: true },
+                        process.env.JWT_SECRET,
+                        { expiresIn: "5m" }
+                    );
+                    return res.json({
+                        success: true,
+                        requires2FA: true,
+                        tempToken,
+                        message: "2FA verification required. Enter your 6-digit authenticator code.",
+                    });
+                }
+
+                const token = jwt.sign(
+                    { id: admin.id, email: admin.email, role: "admin", name: admin.full_name || "System Administrator" },
+                    process.env.JWT_SECRET,
+                    { expiresIn: "24h" }
+                );
+
+                const { password_hash, two_factor_secret, ...safeAdmin } = admin;
+                return res.json({
+                    success: true,
+                    token,
+                    role: "admin",
+                    message: "Admin authentication successful!",
+                    user: safeAdmin,
+                });
+            }
+        }
+    } catch (adminErr) {
+        console.error("Error during admin DB auth check:", adminErr.message);
+    }
+
+    // Fallback Admin check from env if table empty
+    const envAdminEmail = (process.env.ADMIN_EMAIL || "admin@nationhub.com").toLowerCase();
+    const envAdminPassword = process.env.ADMIN_PASSWORD || "admin123";
+
+    if (cleanEmail === envAdminEmail && password === envAdminPassword) {
         const token = jwt.sign(
-            { id: 1, email: adminEmail, role: "admin", name: "System Administrator" },
+            { id: 1, email: envAdminEmail, role: "admin", name: "System Administrator" },
             process.env.JWT_SECRET,
             { expiresIn: "24h" }
         );
@@ -1204,7 +1298,7 @@ app.post("/api/auth/login", async (req, res) => {
             user: {
                 id: 1,
                 name: "System Administrator",
-                email: adminEmail,
+                email: envAdminEmail,
                 role: "Super Admin",
             },
         });
@@ -1225,13 +1319,27 @@ app.post("/api/auth/login", async (req, res) => {
             const isMatch = await bcrypt.compare(password, provider.password_hash);
             
             if (isMatch) {
+                if (provider.two_factor_enabled) {
+                    const tempToken = jwt.sign(
+                        { tempUserId: provider.id, role: "provider", email: provider.email, is2FA: true },
+                        process.env.JWT_SECRET,
+                        { expiresIn: "5m" }
+                    );
+                    return res.json({
+                        success: true,
+                        requires2FA: true,
+                        tempToken,
+                        message: "2FA verification required. Enter your 6-digit authenticator code.",
+                    });
+                }
+
                 const token = jwt.sign(
                     { id: provider.id, email: provider.email, role: "provider", name: provider.full_name },
                     process.env.JWT_SECRET,
                     { expiresIn: "24h" }
                 );
 
-                const { password_hash, ...safeProvider } = provider;
+                const { password_hash, two_factor_secret, ...safeProvider } = provider;
                 return res.json({
                     success: true,
                     token,
@@ -1257,13 +1365,27 @@ app.post("/api/auth/login", async (req, res) => {
             const isMatch = await bcrypt.compare(password, customer.password_hash);
 
             if (isMatch) {
+                if (customer.two_factor_enabled) {
+                    const tempToken = jwt.sign(
+                        { tempUserId: customer.id, role: "customer", email: customer.email, is2FA: true },
+                        process.env.JWT_SECRET,
+                        { expiresIn: "5m" }
+                    );
+                    return res.json({
+                        success: true,
+                        requires2FA: true,
+                        tempToken,
+                        message: "2FA verification required. Enter your 6-digit authenticator code.",
+                    });
+                }
+
                 const token = jwt.sign(
                     { id: customer.id, email: customer.email, role: "customer", name: customer.full_name },
                     process.env.JWT_SECRET,
                     { expiresIn: "24h" }
                 );
 
-                const { password_hash, ...safeCustomer } = customer;
+                const { password_hash, two_factor_secret, ...safeCustomer } = customer;
                 return res.json({
                     success: true,
                     token,
@@ -1281,6 +1403,399 @@ app.post("/api/auth/login", async (req, res) => {
         success: false,
         message: "Invalid email or password. Please check your credentials.",
     });
+});
+
+// POST /api/auth/login-2fa - Validate 6-digit 2FA code during login
+app.post("/api/auth/login-2fa", async (req, res) => {
+    const { tempToken, code } = req.body;
+
+    if (!tempToken || !code) {
+        return res.status(400).json({
+            success: false,
+            message: "Temporary token and 6-digit 2FA code are required.",
+        });
+    }
+
+    try {
+        const decoded = jwt.verify(tempToken, process.env.JWT_SECRET);
+        if (!decoded || !decoded.is2FA || !decoded.tempUserId || !decoded.role) {
+            return res.status(401).json({ success: false, message: "Invalid or expired 2FA session token." });
+        }
+
+        const { tempUserId, role, email } = decoded;
+        let userRecord = null;
+        let tableName = role === 'admin' ? 'admins' : role === 'provider' ? 'provider_profiles' : 'customers';
+
+        if (role === 'admin') {
+            const resAdmin = await db.query(`SELECT * FROM admins WHERE id = $1;`, [tempUserId]);
+            userRecord = resAdmin.rows[0];
+        } else if (role === 'provider') {
+            const resProv = await db.query(
+                `SELECT p.*, c.name as category_name FROM provider_profiles p JOIN categories c ON p.category_id = c.id WHERE p.id = $1;`,
+                [tempUserId]
+            );
+            userRecord = resProv.rows[0];
+        } else if (role === 'customer') {
+            const resCust = await db.query(`SELECT * FROM customers WHERE id = $1;`, [tempUserId]);
+            userRecord = resCust.rows[0];
+        }
+
+        if (!userRecord || !userRecord.two_factor_secret) {
+            return res.status(400).json({ success: false, message: "2FA is not enabled for this account." });
+        }
+
+        const isValidCode = totp.verifyTOTP(userRecord.two_factor_secret, code);
+        if (!isValidCode) {
+            return res.status(401).json({ success: false, message: "Invalid 2FA code. Please try again." });
+        }
+
+        // Issue full session token
+        const fullToken = jwt.sign(
+            { id: userRecord.id, email: userRecord.email, role, name: userRecord.full_name || userRecord.business_name },
+            process.env.JWT_SECRET,
+            { expiresIn: "24h" }
+        );
+
+        const { password_hash, two_factor_secret, ...safeUser } = userRecord;
+
+        res.json({
+            success: true,
+            token: fullToken,
+            role,
+            message: "2FA authentication successful!",
+            user: safeUser,
+        });
+    } catch (err) {
+        console.error("Error verifying 2FA login token:", err.message);
+        res.status(401).json({ success: false, message: "Expired or invalid 2FA verification session." });
+    }
+});
+
+// POST /api/auth/forgot-password - Submit email for password reset token
+app.post("/api/auth/forgot-password", async (req, res) => {
+    const { email } = req.body;
+
+    if (!email || !email.trim()) {
+        return res.status(400).json({ success: false, message: "Email address is required." });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    try {
+        // Search in admins, provider_profiles, customers
+        const [adminRes, providerRes, customerRes] = await Promise.all([
+            db.query(`SELECT id, full_name, email FROM admins WHERE LOWER(email) = $1;`, [cleanEmail]),
+            db.query(`SELECT id, full_name, email FROM provider_profiles WHERE LOWER(email) = $1;`, [cleanEmail]),
+            db.query(`SELECT id, full_name, email FROM customers WHERE LOWER(email) = $1;`, [cleanEmail]),
+        ]);
+
+        let targetTable = null;
+        let user = null;
+
+        if (adminRes.rows.length > 0) {
+            targetTable = 'admins';
+            user = adminRes.rows[0];
+        } else if (providerRes.rows.length > 0) {
+            targetTable = 'provider_profiles';
+            user = providerRes.rows[0];
+        } else if (customerRes.rows.length > 0) {
+            targetTable = 'customers';
+            user = customerRes.rows[0];
+        }
+
+        if (user && targetTable) {
+            const resetToken = crypto.randomBytes(32).toString('hex');
+            const expiresAt = new Date(Date.now() + 3600000); // 1 hour
+
+            await db.query(
+                `UPDATE ${targetTable} SET reset_token = $1, reset_token_expires_at = $2 WHERE id = $3;`,
+                [resetToken, expiresAt, user.id]
+            );
+
+            const appUrl = process.env.APP_URL || 'http://localhost:5173';
+            const resetUrl = `${appUrl}?reset_token=${resetToken}`;
+
+            await sendPasswordResetEmail({
+                toEmail: cleanEmail,
+                userName: user.full_name || 'User',
+                resetUrl,
+                resetToken,
+            });
+
+            return res.json({
+                success: true,
+                message: "Password reset link requested. Please check your registered email.",
+            });
+        } else {
+            return res.status(404).json({
+                success: false,
+                message: "Invalid email address.",
+            });
+        }
+    } catch (err) {
+        console.error("Error during forgot-password handling:", err.message);
+        res.status(500).json({ success: false, message: "Server error processing password reset request." });
+    }
+});
+
+// POST /api/auth/reset-password - Reset password using valid token
+app.post("/api/auth/reset-password", async (req, res) => {
+    const { token, new_password } = req.body;
+
+    if (!token || !new_password) {
+        return res.status(400).json({ success: false, message: "Reset token and new password are required." });
+    }
+
+    if (new_password.length < 6) {
+        return res.status(400).json({ success: false, message: "New password must be at least 6 characters long." });
+    }
+
+    try {
+        const cleanToken = token.trim();
+
+        // Search user by reset token across tables
+        const [adminRes, providerRes, customerRes] = await Promise.all([
+            db.query(`SELECT id FROM admins WHERE reset_token = $1 AND reset_token_expires_at > NOW();`, [cleanToken]),
+            db.query(`SELECT id FROM provider_profiles WHERE reset_token = $1 AND reset_token_expires_at > NOW();`, [cleanToken]),
+            db.query(`SELECT id FROM customers WHERE reset_token = $1 AND reset_token_expires_at > NOW();`, [cleanToken]),
+        ]);
+
+        let targetTable = null;
+        let userId = null;
+
+        if (adminRes.rows.length > 0) {
+            targetTable = 'admins';
+            userId = adminRes.rows[0].id;
+        } else if (providerRes.rows.length > 0) {
+            targetTable = 'provider_profiles';
+            userId = providerRes.rows[0].id;
+        } else if (customerRes.rows.length > 0) {
+            targetTable = 'customers';
+            userId = customerRes.rows[0].id;
+        }
+
+        if (!userId || !targetTable) {
+            return res.status(400).json({ success: false, message: "Invalid or expired password reset token." });
+        }
+
+        const password_hash = await bcrypt.hash(new_password, 10);
+        await db.query(
+            `UPDATE ${targetTable} SET password_hash = $1, reset_token = NULL, reset_token_expires_at = NULL WHERE id = $2;`,
+            [password_hash, userId]
+        );
+
+        res.json({
+            success: true,
+            message: "Password reset successful! You can now log in with your new password.",
+        });
+    } catch (err) {
+        console.error("Error during reset-password execution:", err.message);
+        res.status(500).json({ success: false, message: "Server error resetting password." });
+    }
+});
+
+// PUT /api/auth/change-password - Change Password for Logged-In User
+app.put("/api/auth/change-password", authenticateToken, async (req, res) => {
+    const { current_password, new_password } = req.body;
+
+    if (!current_password || !new_password) {
+        return res.status(400).json({ success: false, message: "Current password and new password are required." });
+    }
+
+    if (new_password.length < 6) {
+        return res.status(400).json({ success: false, message: "New password must be at least 6 characters long." });
+    }
+
+    const { id, role } = req.user;
+
+    try {
+        let userRecord = null;
+        let targetTable = role === 'admin' ? 'admins' : role === 'provider' ? 'provider_profiles' : 'customers';
+
+        const queryResult = await db.query(`SELECT id, password_hash FROM ${targetTable} WHERE id = $1;`, [id]);
+        if (queryResult.rows.length === 0) {
+            return res.status(404).json({ success: false, message: "User account not found." });
+        }
+
+        userRecord = queryResult.rows[0];
+
+        const isMatch = await bcrypt.compare(current_password, userRecord.password_hash);
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: "Current password is incorrect." });
+        }
+
+        const newHash = await bcrypt.hash(new_password, 10);
+        await db.query(`UPDATE ${targetTable} SET password_hash = $1 WHERE id = $2;`, [newHash, id]);
+
+        res.json({
+            success: true,
+            message: "Password updated successfully!",
+        });
+    } catch (err) {
+        console.error("Error changing password:", err.message);
+        res.status(500).json({ success: false, message: "Server error updating password." });
+    }
+});
+
+// PUT /api/auth/update-email - Change Email Address for Logged-In User
+app.put("/api/auth/update-email", authenticateToken, async (req, res) => {
+    const { new_email, password } = req.body;
+
+    if (!new_email || !new_email.trim()) {
+        return res.status(400).json({ success: false, message: "New email address is required." });
+    }
+
+    if (!password) {
+        return res.status(400).json({ success: false, message: "Password is required to confirm email change." });
+    }
+
+    const cleanEmail = new_email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+        return res.status(400).json({ success: false, message: "Invalid email format." });
+    }
+
+    const { id, role } = req.user;
+
+    try {
+        let targetTable = role === 'admin' ? 'admins' : role === 'provider' ? 'provider_profiles' : 'customers';
+
+        // Check if email is already in use by another user across tables
+        const [adminCheck, providerCheck, customerCheck] = await Promise.all([
+            db.query(`SELECT id FROM admins WHERE LOWER(email) = $1 AND (id != $2 OR 'admins' != $3);`, [cleanEmail, id, targetTable]),
+            db.query(`SELECT id FROM provider_profiles WHERE LOWER(email) = $1 AND (id != $2 OR 'provider_profiles' != $3);`, [cleanEmail, id, targetTable]),
+            db.query(`SELECT id FROM customers WHERE LOWER(email) = $1 AND (id != $2 OR 'customers' != $3);`, [cleanEmail, id, targetTable]),
+        ]);
+
+        if (adminCheck.rows.length > 0 || providerCheck.rows.length > 0 || customerCheck.rows.length > 0) {
+            return res.status(400).json({ success: false, message: "This email address is already registered to another account." });
+        }
+
+        // Verify current password
+        const userRes = await db.query(`SELECT id, password_hash FROM ${targetTable} WHERE id = $1;`, [id]);
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ success: false, message: "User account not found." });
+        }
+
+        const isMatch = await bcrypt.compare(password, userRes.rows[0].password_hash);
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: "Incorrect password confirmation." });
+        }
+
+        // Update email in DB
+        await db.query(`UPDATE ${targetTable} SET email = $1 WHERE id = $2;`, [cleanEmail, id]);
+
+        // Generate updated JWT token
+        const token = jwt.sign(
+            { id, email: cleanEmail, role, name: req.user.name },
+            process.env.JWT_SECRET,
+            { expiresIn: "24h" }
+        );
+
+        res.json({
+            success: true,
+            email: cleanEmail,
+            token,
+            message: "Email address updated successfully!",
+        });
+    } catch (err) {
+        console.error("Error during update-email execution:", err.message);
+        res.status(500).json({ success: false, message: "Server error updating email address." });
+    }
+});
+
+// POST /api/auth/2fa/setup - Initialize 2FA Secret & OTP Auth URL
+app.post("/api/auth/2fa/setup", authenticateToken, async (req, res) => {
+    try {
+        const secret = totp.generateSecret();
+        const otpauth_url = totp.getOtpAuthUrl(secret, req.user.email);
+
+        res.json({
+            success: true,
+            secret,
+            otpauth_url,
+            qr_code_url: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(otpauth_url)}`,
+        });
+    } catch (err) {
+        console.error("Error generating 2FA setup:", err.message);
+        res.status(500).json({ success: false, message: "Server error initializing 2FA setup." });
+    }
+});
+
+// POST /api/auth/2fa/verify-enable - Verify Code & Enable 2FA on Account
+app.post("/api/auth/2fa/verify-enable", authenticateToken, async (req, res) => {
+    const { secret, code } = req.body;
+
+    if (!secret || !code) {
+        return res.status(400).json({ success: false, message: "Secret key and 6-digit TOTP code are required." });
+    }
+
+    const isValid = totp.verifyTOTP(secret, code);
+    if (!isValid) {
+        return res.status(400).json({ success: false, message: "Invalid 6-digit code. Please verify your authenticator app and try again." });
+    }
+
+    const { id, role } = req.user;
+    const targetTable = role === 'admin' ? 'admins' : role === 'provider' ? 'provider_profiles' : 'customers';
+
+    try {
+        await db.query(
+            `UPDATE ${targetTable} SET two_factor_secret = $1, two_factor_enabled = TRUE WHERE id = $2;`,
+            [secret, id]
+        );
+
+        res.json({
+            success: true,
+            message: "Two-Factor Authentication enabled successfully!",
+        });
+    } catch (err) {
+        console.error("Error enabling 2FA:", err.message);
+        res.status(500).json({ success: false, message: "Server error activating 2FA." });
+    }
+});
+
+// POST /api/auth/2fa/disable - Disable 2FA on Account
+app.post("/api/auth/2fa/disable", authenticateToken, async (req, res) => {
+    const { password, code } = req.body;
+
+    const { id, role } = req.user;
+    const targetTable = role === 'admin' ? 'admins' : role === 'provider' ? 'provider_profiles' : 'customers';
+
+    try {
+        const userRes = await db.query(`SELECT password_hash, two_factor_secret FROM ${targetTable} WHERE id = $1;`, [id]);
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ success: false, message: "User not found." });
+        }
+
+        const user = userRes.rows[0];
+
+        if (password) {
+            const isMatch = await bcrypt.compare(password, user.password_hash);
+            if (!isMatch) {
+                return res.status(401).json({ success: false, message: "Incorrect password." });
+            }
+        } else if (code) {
+            const isValid = totp.verifyTOTP(user.two_factor_secret, code);
+            if (!isValid) {
+                return res.status(400).json({ success: false, message: "Invalid 2FA code." });
+            }
+        } else {
+            return res.status(400).json({ success: false, message: "Password or 2FA code is required to disable 2FA." });
+        }
+
+        await db.query(
+            `UPDATE ${targetTable} SET two_factor_secret = NULL, two_factor_enabled = FALSE WHERE id = $1;`,
+            [id]
+        );
+
+        res.json({
+            success: true,
+            message: "Two-Factor Authentication disabled successfully.",
+        });
+    } catch (err) {
+        console.error("Error disabling 2FA:", err.message);
+        res.status(500).json({ success: false, message: "Server error disabling 2FA." });
+    }
 });
 
 // POST /api/admin/login - Platform Admin Authentication
@@ -1322,6 +1837,91 @@ app.post("/api/admin/login", async (req, res) => {
     });
 });
 
+// PUT /api/admin/avatar - Update Admin Profile Picture
+app.put("/api/admin/avatar", authenticateToken, requireRole("admin"), async (req, res) => {
+    const { avatar_url } = req.body;
+    if (!avatar_url) {
+        return res.status(400).json({ success: false, message: "Avatar URL is required." });
+    }
+    const { id } = req.user;
+    try {
+        await db.query(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS avatar_url TEXT;`);
+        const result = await db.query(
+            `UPDATE admins SET avatar_url = $1 WHERE id = $2 RETURNING id, email, full_name, avatar_url;`,
+            [avatar_url, id]
+        );
+        res.json({
+            success: true,
+            message: "Admin profile picture updated successfully!",
+            data: result.rows[0],
+        });
+    } catch (error) {
+        console.error("Error updating admin avatar:", error.message);
+        res.status(500).json({ success: false, message: "Server error updating profile picture" });
+    }
+});
+
+// GET /api/admin/stats - Admin Platform Analytics
+app.get("/api/admin/stats", authenticateToken, requireRole("admin"), async (req, res) => {
+    try {
+        const stats = {
+            total_providers: 0,
+            pending_providers: 0,
+            approved_providers: 0,
+            total_enquiries: 0,
+            pending_enquiries: 0,
+            accepted_enquiries: 0,
+            completed_enquiries: 0,
+            cancelled_enquiries: 0,
+            total_reviews: 0,
+        };
+
+        const providerCounts = await db.query(`
+            SELECT status, COUNT(*) as count FROM provider_profiles GROUP BY status;
+        `);
+        let totalProviders = 0;
+        providerCounts.rows.forEach(row => {
+            const count = parseInt(row.count, 10);
+            totalProviders += count;
+            if (row.status === 'pending') stats.pending_providers = count;
+            if (row.status === 'approved') stats.approved_providers = count;
+        });
+        stats.total_providers = totalProviders;
+
+        const enquiryCounts = await db.query(`
+            SELECT status, COUNT(*) as count FROM service_enquiries GROUP BY status;
+        `);
+        let totalEnquiries = 0;
+        enquiryCounts.rows.forEach(row => {
+            const count = parseInt(row.count, 10);
+            totalEnquiries += count;
+            if (row.status === 'pending') stats.pending_enquiries = count;
+            if (row.status === 'contacted') stats.accepted_enquiries = count;
+            if (row.status === 'completed') stats.completed_enquiries = count;
+            if (row.status === 'cancelled') stats.cancelled_enquiries = count;
+        });
+        stats.total_enquiries = totalEnquiries;
+
+        const customerCount = await db.query(`SELECT COUNT(*) as count FROM customers;`);
+        stats.total_customers = parseInt(customerCount.rows[0].count, 10);
+
+        const reviewCount = await db.query(`SELECT COUNT(*) as count FROM provider_reviews;`);
+        stats.total_reviews = parseInt(reviewCount.rows[0].count, 10);
+
+        const avgRatingQuery = await db.query(`SELECT COALESCE(AVG(rating), 0) as avg FROM provider_reviews;`);
+        stats.overall_rating = parseFloat(avgRatingQuery.rows[0].avg).toFixed(1);
+
+        const handled = stats.accepted_enquiries + stats.completed_enquiries + stats.cancelled_enquiries;
+        stats.response_rate = stats.total_enquiries > 0 ? Math.round((handled / stats.total_enquiries) * 100) : 0;
+        stats.completion_rate = stats.total_enquiries > 0 ? Math.round((stats.completed_enquiries / stats.total_enquiries) * 100) : 0;
+
+        res.json({ success: true, stats });
+    } catch (error) {
+        console.error("Error fetching admin stats:", error.message);
+        res.status(500).json({ success: false, message: "Server error fetching platform analytics" });
+    }
+});
+
 // GET /api/admin/providers - Protected Platform Moderation Queue
 app.get("/api/admin/providers", authenticateToken, requireRole("admin"), async (req, res) => {
     const { status } = req.query;
@@ -1329,11 +1929,17 @@ app.get("/api/admin/providers", authenticateToken, requireRole("admin"), async (
     let queryText = `
         SELECT 
             p.*, 
-            c.name as category_name,
-            COUNT(r.id)::int as review_count
+            COUNT(DISTINCT r.id)::int as review_count,
+            COALESCE(AVG(DISTINCT r.rating), 0)::numeric(2,1) as average_rating,
+            COUNT(DISTINCT e.id)::int as total_requests,
+            COUNT(DISTINCT CASE WHEN e.status = 'pending' THEN e.id END)::int as pending_requests,
+            COUNT(DISTINCT CASE WHEN e.status = 'contacted' THEN e.id END)::int as accepted_requests,
+            COUNT(DISTINCT CASE WHEN e.status = 'completed' THEN e.id END)::int as completed_requests,
+            COUNT(DISTINCT CASE WHEN e.status = 'cancelled' THEN e.id END)::int as cancelled_requests
         FROM provider_profiles p
         JOIN categories c ON p.category_id = c.id
         LEFT JOIN provider_reviews r ON p.id = r.provider_id
+        LEFT JOIN service_enquiries e ON p.id = e.provider_id
     `;
     const queryValues = [];
 
