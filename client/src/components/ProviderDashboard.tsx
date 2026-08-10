@@ -12,8 +12,14 @@ import {
     Loader2,
     LogOut,
     RefreshCw,
+    BarChart3,
+    ListFilter,
+    Camera,
 } from 'lucide-react';
 import { ChatModal } from './ChatModal';
+import { NotificationBell } from './NotificationBell';
+import { ProviderAnalytics } from './ProviderAnalytics';
+import { AvatarUploadModal } from './AvatarUploadModal';
 
 interface Enquiry {
     id: number;
@@ -37,6 +43,36 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [updatingId, setUpdatingId] = useState<number | null>(null);
+    const [activeTab, setActiveTab] = useState<'enquiries' | 'analytics'>('enquiries');
+
+    // Avatar Upload Modal State
+    const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
+    const [providerAvatar, setProviderAvatar] = useState<string>(provider.avatar_url || '');
+
+    const handleSaveAvatar = async (newAvatarUrl: string) => {
+        try {
+            const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+            const res = await fetch(`${API_BASE}/api/providers/${provider.id}/avatar`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ avatar_url: newAvatarUrl }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setProviderAvatar(newAvatarUrl);
+                const sessionStr = localStorage.getItem('provider') || sessionStorage.getItem('provider');
+                if (sessionStr) {
+                    try {
+                        const sessionObj = JSON.parse(sessionStr);
+                        sessionObj.avatar_url = newAvatarUrl;
+                        localStorage.setItem('provider', JSON.stringify(sessionObj));
+                    } catch (e) {}
+                }
+            }
+        } catch (err) {
+            console.error('Error updating provider avatar:', err);
+        }
+    };
 
     // Direct Chat Modal State
     const [chatModalState, setChatModalState] = useState<{
@@ -127,14 +163,38 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
                 <div className="glass-panel" style={{ padding: '2rem', background: '#ffffff', border: '1px solid #cbd5e1', marginBottom: '2rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
-                            <img
-                                src={provider.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
-                                alt={provider.full_name}
-                                onError={(e) => {
-                                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80';
-                                }}
-                                style={{ width: '84px', height: '84px', borderRadius: '16px', objectFit: 'cover', border: '2px solid #e2e8f0' }}
-                            />
+                            <div
+                                style={{ position: 'relative', cursor: 'pointer' }}
+                                onClick={() => setIsAvatarModalOpen(true)}
+                                title="Click to change profile picture"
+                            >
+                                <img
+                                    src={providerAvatar || provider.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
+                                    alt={provider.full_name}
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80';
+                                    }}
+                                    style={{ width: '84px', height: '84px', borderRadius: '16px', objectFit: 'cover', border: '2px solid #e2e8f0', boxShadow: '0 4px 10px rgba(0,0,0,0.08)' }}
+                                />
+                                <div
+                                    style={{
+                                        position: 'absolute',
+                                        bottom: '-4px',
+                                        right: '-4px',
+                                        background: '#0284c7',
+                                        color: '#ffffff',
+                                        padding: '0.35rem',
+                                        borderRadius: '50%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        border: '2px solid #ffffff',
+                                        boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                                    }}
+                                >
+                                    <Camera size={14} />
+                                </div>
+                            </div>
                             <div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                     <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a' }}>{provider.business_name || provider.full_name}</h1>
@@ -172,7 +232,8 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                            <NotificationBell userType="provider" userId={provider.id} />
                             <button
                                 className="btn-secondary"
                                 onClick={fetchEnquiries}
@@ -193,18 +254,75 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
                     </div>
                 </div>
 
-                {/* Status Alert if Pending */}
-                {provider.status === 'pending' && (
-                    <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '1.25rem', marginBottom: '2rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                        <Clock size={28} style={{ color: '#d97706', flexShrink: 0 }} />
-                        <div>
-                            <h4 style={{ color: '#b45309', fontWeight: 700, fontSize: '1rem' }}>Profile Moderation Under Review</h4>
-                            <p style={{ color: '#78350f', fontSize: '0.88rem', marginTop: '0.2rem' }}>
-                                Your provider profile has been submitted and is currently being reviewed by administrators. Once approved, your services will be listed publicly on the marketplace.
-                            </p>
-                        </div>
-                    </div>
-                )}
+                {/* Navigation Tab Bar */}
+                <div
+                    style={{
+                        display: 'flex',
+                        gap: '0.75rem',
+                        marginBottom: '1.75rem',
+                        borderBottom: '2px solid #e2e8f0',
+                        paddingBottom: '0.5rem',
+                    }}
+                >
+                    <button
+                        onClick={() => setActiveTab('enquiries')}
+                        style={{
+                            padding: '0.65rem 1.25rem',
+                            borderRadius: '10px',
+                            border: 'none',
+                            fontWeight: 800,
+                            fontSize: '0.925rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            backgroundColor: activeTab === 'enquiries' ? '#0284c7' : 'transparent',
+                            color: activeTab === 'enquiries' ? '#ffffff' : '#64748b',
+                            boxShadow: activeTab === 'enquiries' ? '0 4px 12px rgba(2, 132, 199, 0.25)' : 'none',
+                            transition: 'all 0.2s ease',
+                        }}
+                    >
+                        <ListFilter size={18} />
+                        <span>Customer Requests ({enquiries.length})</span>
+                    </button>
+
+                    <button
+                        onClick={() => setActiveTab('analytics')}
+                        style={{
+                            padding: '0.65rem 1.25rem',
+                            borderRadius: '10px',
+                            border: 'none',
+                            fontWeight: 800,
+                            fontSize: '0.925rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            backgroundColor: activeTab === 'analytics' ? '#0284c7' : 'transparent',
+                            color: activeTab === 'analytics' ? '#ffffff' : '#64748b',
+                            boxShadow: activeTab === 'analytics' ? '0 4px 12px rgba(2, 132, 199, 0.25)' : 'none',
+                            transition: 'all 0.2s ease',
+                        }}
+                    >
+                        <BarChart3 size={18} />
+                        <span>Performance Analytics</span>
+                    </button>
+                </div>
+
+                {/* Render Performance Analytics Tab */}
+                {activeTab === 'analytics' ? <ProviderAnalytics providerId={provider.id} /> : <div>
+                        {/* Status Alert if Pending */}
+                        {provider.status === 'pending' && (
+                            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '1.25rem', marginBottom: '2rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                <Clock size={28} style={{ color: '#d97706', flexShrink: 0 }} />
+                                <div>
+                                    <h4 style={{ color: '#b45309', fontWeight: 700, fontSize: '1rem' }}>Profile Moderation Under Review</h4>
+                                    <p style={{ color: '#78350f', fontSize: '0.88rem', marginTop: '0.2rem' }}>
+                                        Your provider profile has been submitted and is currently being reviewed by administrators. Once approved, your services will be listed publicly on the marketplace.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                 {/* Dashboard Stats */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
@@ -377,7 +495,7 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
                         </div>
                     )}
                 </div>
-            </div>
+            </div>}
 
             {/* Direct Chat Modal */}
             <ChatModal
@@ -390,6 +508,15 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
                 currentUserType="provider"
                 currentUserName={provider.business_name || provider.full_name}
             />
+
+            {/* Profile Picture Upload & Preset Selection Modal */}
+            <AvatarUploadModal
+                isOpen={isAvatarModalOpen}
+                onClose={() => setIsAvatarModalOpen(false)}
+                currentAvatar={providerAvatar || provider.avatar_url || ''}
+                onSaveAvatar={handleSaveAvatar}
+            />
+            </div>
         </div>
     );
 };

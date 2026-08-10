@@ -432,7 +432,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                       lineHeight: '1.5',
                     }}
                   >
-                    <p style={{ margin: 0, wordBreak: 'break-word', whitespace: 'pre-wrap' }}>
+                    <p style={{ margin: 0, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                       {msg.message_text}
                     </p>
                     <div

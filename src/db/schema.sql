@@ -88,6 +88,18 @@ CREATE TABLE IF NOT EXISTS enquiry_messages (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- User Notifications Table (Real Event-Driven Alerts)
+CREATE TABLE IF NOT EXISTS user_notifications (
+    id SERIAL PRIMARY KEY,
+    user_type VARCHAR(20) NOT NULL, -- 'customer', 'provider'
+    user_id VARCHAR(255) NOT NULL,   -- customer_email or provider_id
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    link VARCHAR(255),
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance when searching and filtering
 CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
 CREATE INDEX IF NOT EXISTS idx_services_slug ON services(slug);
@@ -100,6 +112,4 @@ CREATE INDEX IF NOT EXISTS idx_enquiries_customer_id ON service_enquiries(custom
 CREATE INDEX IF NOT EXISTS idx_enquiries_status ON service_enquiries(status);
 CREATE INDEX IF NOT EXISTS idx_reviews_provider_id ON provider_reviews(provider_id);
 CREATE INDEX IF NOT EXISTS idx_messages_enquiry_id ON enquiry_messages(enquiry_id);
-
-
-
+CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON user_notifications(user_type, user_id, is_read);

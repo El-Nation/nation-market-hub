@@ -442,6 +442,15 @@ app.post("/api/enquiries", async (req, res) => {
         const newEnquiry = result.rows[0];
         const targetProvider = providerCheck.rows[0];
 
+        // REAL EVENT TRIGGER: Create in-app notification for the service provider
+        await createNotification({
+            user_type: 'provider',
+            user_id: targetProvider.id,
+            title: 'New Service Request!',
+            message: `New request from ${newEnquiry.customer_name}: "${newEnquiry.service_description.slice(0, 50)}${newEnquiry.service_description.length > 50 ? '...' : ''}"`,
+            link: '/provider-dashboard'
+        });
+
         // Asynchronously dispatch email notification to provider
         sendEnquiryNotificationToProvider({
             providerEmail: targetProvider.email,
@@ -454,8 +463,16 @@ app.post("/api/enquiries", async (req, res) => {
             serviceDescription: newEnquiry.service_description,
         }).catch((err) => console.error("Async provider email dispatch error:", err));
 
-        // Asynchronously dispatch confirmation email to customer
+        // Asynchronously dispatch confirmation email and in-app notification to customer
         if (newEnquiry.customer_email) {
+            await createNotification({
+                user_type: 'customer',
+                user_id: newEnquiry.customer_email,
+                title: 'Service Request Sent',
+                message: `Your request to ${targetProvider.business_name || targetProvider.full_name} for "${newEnquiry.service_description.slice(0, 40)}${newEnquiry.service_description.length > 40 ? '...' : ''}" has been sent successfully.`,
+                link: '/customer-dashboard'
+            });
+
             sendEnquiryConfirmationToCustomer({
                 customerEmail: newEnquiry.customer_email,
                 customerName: newEnquiry.customer_name,
@@ -545,8 +562,26 @@ app.patch("/api/enquiries/:id/status", authenticateToken, requireRole("provider"
         );
         const providerInfo = providerQuery.rows[0] || {};
 
-        // Asynchronously dispatch status update email to customer
+        // REAL EVENT TRIGGER: Create in-app notification for customer on status change
         if (updatedEnquiry.customer_email) {
+            const statusTitles = {
+                contacted: 'Service Request Approved',
+                completed: 'Service Request Completed',
+                cancelled: 'Service Request Cancelled',
+                pending: 'Service Request Pending'
+            };
+            const title = statusTitles[status] || 'Service Request Status Updated';
+            const providerDisplayName = providerInfo.business_name || 'Service Provider';
+
+            await createNotification({
+                user_type: 'customer',
+                user_id: updatedEnquiry.customer_email,
+                title: title,
+                message: `${providerDisplayName} has updated your service request status to "${status}".`,
+                link: '/customer-dashboard'
+            });
+
+            // Asynchronously dispatch status update email to customer
             sendStatusUpdateNotificationToCustomer({
                 customerEmail: updatedEnquiry.customer_email,
                 customerName: updatedEnquiry.customer_name,
@@ -568,6 +603,189 @@ app.patch("/api/enquiries/:id/status", authenticateToken, requireRole("provider"
             success: false,
             message: "Server error updating enquiry status",
         });
+    }
+});
+
+// Helper function to create in-app notifications
+async function createNotification({ user_type, user_id, title, message, link }) {
+    if (!user_type || !user_id) {
+        console.warn("[NOTIFICATION DEBUG] Skipped: missing user_type or user_id", { user_type, user_id });
+        return;
+    }
+    try {
+        console.log(`[NOTIFICATION DEBUG] Inserting notification for ${user_type}:${user_id} - Title: "${title}"`);
+        const res = await db.query(
+            `INSERT INTO user_notifications (user_type, user_id, title, message, link)
+             VALUES ($1, $2, $3, $4, $5) RETURNING id;`,
+            [user_type, String(user_id).trim(), title, message, link || null]
+        );
+        console.log(`[NOTIFICATION DEBUG] Notification inserted successfully! ID: ${res.rows[0].id}`);
+    } catch (err) {
+        console.error("[NOTIFICATION DEBUG] Error creating in-app notification:", err.message);
+    }
+}
+
+// GET /api/notifications - Fetch user notifications and unread count
+app.get("/api/notifications", async (req, res) => {
+    const { user_type, user_id } = req.query;
+    if (!user_type || !user_id) {
+        return res.status(400).json({ success: false, message: "user_type and user_id are required." });
+    }
+
+    try {
+        const notificationsRes = await db.query(
+            `SELECT * FROM user_notifications 
+             WHERE user_type = $1 AND LOWER(user_id) = LOWER($2) 
+             ORDER BY created_at DESC LIMIT 50;`,
+            [user_type, String(user_id)]
+        );
+
+        const unreadRes = await db.query(
+            `SELECT COUNT(*) FROM user_notifications 
+             WHERE user_type = $1 AND LOWER(user_id) = LOWER($2) AND is_read = false;`,
+            [user_type, String(user_id)]
+        );
+
+        console.log(`[NOTIFICATION DEBUG] GET /api/notifications - user_type=${user_type}, user_id=${user_id}, returned ${notificationsRes.rows.length} items (unread: ${unreadRes.rows[0].count})`);
+
+        res.json({
+            success: true,
+            unread_count: parseInt(unreadRes.rows[0].count, 10),
+            data: notificationsRes.rows,
+        });
+    } catch (error) {
+        console.error("[NOTIFICATION DEBUG] Error fetching notifications:", error.message);
+        res.status(500).json({ success: false, message: "Server error fetching notifications" });
+    }
+});
+
+// PUT /api/notifications/:id/read - Mark single notification as read
+app.put("/api/notifications/:id/read", async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query("UPDATE user_notifications SET is_read = true WHERE id = $1;", [id]);
+        res.json({ success: true, message: "Notification marked as read" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Error updating notification" });
+    }
+});
+
+// PUT /api/notifications/read-all - Mark all notifications as read
+app.put("/api/notifications/read-all", async (req, res) => {
+    const { user_type, user_id } = req.body;
+    if (!user_type || !user_id) {
+        return res.status(400).json({ success: false, message: "user_type and user_id are required." });
+    }
+
+    try {
+        await db.query(
+            "UPDATE user_notifications SET is_read = true WHERE user_type = $1 AND LOWER(user_id) = LOWER($2);",
+            [user_type, String(user_id)]
+        );
+        res.json({ success: true, message: "All notifications marked as read" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Error updating notifications" });
+    }
+});
+
+// GET /api/providers/:id/analytics - Fetch real database analytics for a provider
+app.get("/api/providers/:id/analytics", async (req, res) => {
+    const { id } = req.params;
+    try {
+        const enquiryStats = await db.query(
+            `SELECT 
+                COUNT(*) as total_enquiries,
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_count,
+                COUNT(CASE WHEN status = 'contacted' THEN 1 END) as accepted_count,
+                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
+                COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled_count
+             FROM service_enquiries WHERE provider_id = $1;`,
+            [id]
+        );
+
+        let avgRating = "5.0";
+        let totalReviews = 0;
+
+        try {
+            const reviewStats = await db.query(
+                `SELECT COUNT(*) as total_reviews, AVG(rating) as avg_rating FROM provider_reviews WHERE provider_id = $1;`,
+                [id]
+            );
+            const revRow = reviewStats.rows[0] || {};
+            if (revRow.avg_rating) {
+                avgRating = parseFloat(revRow.avg_rating).toFixed(1);
+            } else {
+                const providerProfile = await db.query(`SELECT rating FROM provider_profiles WHERE id = $1;`, [id]);
+                if (providerProfile.rows[0] && providerProfile.rows[0].rating) {
+                    avgRating = parseFloat(providerProfile.rows[0].rating).toFixed(1);
+                }
+            }
+            totalReviews = parseInt(revRow.total_reviews || '0', 10);
+        } catch (revErr) {
+            console.error("Provider reviews query notice:", revErr.message);
+            const providerProfile = await db.query(`SELECT rating FROM provider_profiles WHERE id = $1;`, [id]);
+            if (providerProfile.rows[0] && providerProfile.rows[0].rating) {
+                avgRating = parseFloat(providerProfile.rows[0].rating).toFixed(1);
+            }
+        }
+
+        const row = enquiryStats.rows[0] || {};
+        const total = parseInt(row.total_enquiries || '0', 10);
+        const completed = parseInt(row.completed_count || '0', 10);
+        const accepted = parseInt(row.accepted_count || '0', 10);
+        const pending = parseInt(row.pending_count || '0', 10);
+        const cancelled = parseInt(row.cancelled_count || '0', 10);
+
+        const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+        const responseRate = total > 0 ? Math.round(((completed + accepted) / total) * 100) : 0;
+
+        res.json({
+            success: true,
+            analytics: {
+                totalEnquiries: total,
+                completedCount: completed,
+                acceptedCount: accepted,
+                pendingCount: pending,
+                cancelledCount: cancelled,
+                completionRate,
+                responseRate,
+                averageRating: parseFloat(avgRating),
+                totalReviews,
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching provider analytics:", error.message);
+        res.status(500).json({ success: false, message: "Server error fetching analytics" });
+    }
+});
+
+// PATCH /api/providers/:id/avatar - Update provider profile picture
+app.patch("/api/providers/:id/avatar", async (req, res) => {
+    const { id } = req.params;
+    const { avatar_url } = req.body;
+
+    if (!avatar_url) {
+        return res.status(400).json({ success: false, message: "avatar_url is required." });
+    }
+
+    try {
+        const result = await db.query(
+            "UPDATE provider_profiles SET avatar_url = $1 WHERE id = $2 RETURNING id, full_name, email, business_name, avatar_url;",
+            [avatar_url, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: "Provider not found." });
+        }
+
+        res.json({
+            success: true,
+            message: "Profile picture updated successfully!",
+            data: result.rows[0],
+        });
+    } catch (error) {
+        console.error("Error updating provider avatar:", error.message);
+        res.status(500).json({ success: false, message: "Server error updating profile picture" });
     }
 });
 
@@ -625,7 +843,7 @@ app.post("/api/enquiries/:id/messages", async (req, res) => {
 
     try {
         // Verify enquiry exists
-        const enquiryCheck = await db.query("SELECT id FROM service_enquiries WHERE id = $1;", [id]);
+        const enquiryCheck = await db.query("SELECT id, provider_id, customer_email FROM service_enquiries WHERE id = $1;", [id]);
         if (enquiryCheck.rows.length === 0) {
             return res.status(404).json({
                 success: false,
@@ -639,11 +857,34 @@ app.post("/api/enquiries/:id/messages", async (req, res) => {
             RETURNING *;
         `;
         const result = await db.query(insertQuery, [id, sender_type, sender_name.trim(), message_text.trim()]);
+        const newMessageRow = result.rows[0];
+
+        // REAL EVENT TRIGGER: Notify recipient of direct chat message
+        const enquiryRow = enquiryCheck.rows[0];
+        if (sender_type === 'customer') {
+            await createNotification({
+                user_type: 'provider',
+                user_id: enquiryRow.provider_id,
+                title: `New Message from ${sender_name}`,
+                message: `"${message_text.trim().slice(0, 50)}${message_text.trim().length > 50 ? '...' : ''}"`,
+                link: `/provider-dashboard`
+            });
+        } else {
+            if (enquiryRow.customer_email) {
+                await createNotification({
+                    user_type: 'customer',
+                    user_id: enquiryRow.customer_email,
+                    title: `New Message from ${sender_name}`,
+                    message: `"${message_text.trim().slice(0, 50)}${message_text.trim().length > 50 ? '...' : ''}"`,
+                    link: `/customer-dashboard`
+                });
+            }
+        }
 
         res.status(201).json({
             success: true,
             message: "Message sent successfully!",
-            data: result.rows[0],
+            data: newMessageRow,
         });
     } catch (error) {
         console.error("Error posting enquiry message:", error.message);

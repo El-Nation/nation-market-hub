@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, Clock, CheckCircle2, AlertCircle, Phone, MessageSquare, MapPin, Mail, Calendar, Tag, Camera, X, Check, Image as ImageIcon, Upload } from 'lucide-react';
 import { ChatModal } from './ChatModal';
+import { NotificationBell } from './NotificationBell';
 
 interface ServiceEnquiry {
     id: number;
@@ -280,7 +281,8 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({ customer, 
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <NotificationBell userType="customer" userId={currentCustomer.email} />
                     <button
                         onClick={fetchCustomerEnquiries}
                         disabled={refreshing}
