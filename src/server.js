@@ -68,10 +68,7 @@ const requireRole = (...allowedRoles) => {
     };
 };
 
-// Root route
-app.get("/", (req, res) => {
-    res.send("Nation Market Hub API is running!");
-});
+
 
 // Database test route
 app.get("/api/db-test", async (req, res) => {
