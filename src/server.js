@@ -1,5 +1,7 @@
-// Load environment variables from .env file
-require("dotenv").config();
+// Load environment variables locally if not in production
+if (process.env.NODE_ENV !== "production") {
+    require("dotenv").config();
+}
 
 const crypto = require("crypto");
 const express = require("express");
@@ -21,7 +23,8 @@ const PORT = process.env.PORT || 5000;
 
 // Validate JWT Secret presence from environment
 if (!process.env.JWT_SECRET) {
-    console.error("CRITICAL ERROR: JWT_SECRET environment variable is missing in .env!");
+    console.error("CRITICAL ERROR: JWT_SECRET environment variable is missing!");
+    process.exit(1);
 }
 
 // Enable CORS and JSON body parsing middleware
@@ -2043,7 +2046,7 @@ if (process.env.NODE_ENV === "production") {
     app.use(express.static(path.join(__dirname, "../client/dist")));
     
     // Catch-all route to serve React's index.html for any unmatched routes
-    app.get("*", (req, res) => {
+    app.get("/{*splat}", (req, res) => {
         res.sendFile(path.join(__dirname, "../client/dist/index.html"));
     });
 }

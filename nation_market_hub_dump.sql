@@ -78,12 +78,12 @@ DROP SEQUENCE IF EXISTS public.categories_id_seq;
 DROP TABLE IF EXISTS public.categories;
 DROP SEQUENCE IF EXISTS public.admins_id_seq;
 DROP TABLE IF EXISTS public.admins;
-DROP SCHEMA IF EXISTS public;
+-- DROP SCHEMA IF EXISTS public;
 --
 -- Name: public; Type: SCHEMA; Schema: -; Owner: -
 --
 
-CREATE SCHEMA public;
+-- CREATE SCHEMA public;
 
 
 --
