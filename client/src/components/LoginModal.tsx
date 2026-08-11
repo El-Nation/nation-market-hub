@@ -33,7 +33,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const API_BASE = import.meta.env.VITE_API_URL || '${import.meta.env.VITE_API_URL}';
+  const API_BASE = import.meta.env.VITE_API_URL || "";
 
   useEffect(() => {
     if (initialResetToken) {
@@ -59,7 +59,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Backend server is not running on ${import.meta.env.VITE_API_URL} or returned invalid response.');
+        throw new Error(`Backend server returned an invalid response or could not connect.`);
       }
 
       const data = await response.json();

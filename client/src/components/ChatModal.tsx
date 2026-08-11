@@ -40,7 +40,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   const [isVisible, setIsVisible] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const API_BASE = import.meta.env.VITE_API_URL || '${import.meta.env.VITE_API_URL}';
+  const API_BASE = import.meta.env.VITE_API_URL || "";
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

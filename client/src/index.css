@@ -158,6 +158,7 @@ button {
   max-width: 650px;
   margin: 0 auto;
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   padding: 0.5rem;
   background: #ffffff;

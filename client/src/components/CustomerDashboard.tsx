@@ -95,7 +95,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({ customer, 
             const res = await fetch(`${import.meta.env.VITE_API_URL}/api/customers/enquiries`, { headers });
             const contentType = res.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
-                setError('Backend server is not running on ${import.meta.env.VITE_API_URL} or returned invalid response.');
+                setError(`Backend server returned an invalid response or could not connect.`);
                 return;
             }
             const data = await res.json();

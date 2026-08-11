@@ -58,7 +58,7 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
 
     const handleSaveAvatar = async (newAvatarUrl: string) => {
         try {
-            const API_BASE = import.meta.env.VITE_API_URL || '${import.meta.env.VITE_API_URL}';
+            const API_BASE = import.meta.env.VITE_API_URL || "";
             const res = await fetch(`${API_BASE}/api/providers/${provider.id}/avatar`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },

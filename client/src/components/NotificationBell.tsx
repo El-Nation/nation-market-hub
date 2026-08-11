@@ -28,7 +28,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ userType, us
   const isInitialLoadRef = useRef<boolean>(true);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
-  const API_BASE = import.meta.env.VITE_API_URL || '${import.meta.env.VITE_API_URL}';
+  const API_BASE = import.meta.env.VITE_API_URL || "";
 
   // Get or initialize singleton AudioContext
   const getAudioContext = () => {

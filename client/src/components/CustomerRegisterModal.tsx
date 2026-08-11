@@ -45,7 +45,7 @@ export const CustomerRegisterModal: React.FC<CustomerRegisterModalProps> = ({
 
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
-                throw new Error('Backend server is not running on ${import.meta.env.VITE_API_URL} or returned invalid response. Please start `node src/server.js`.');
+                throw new Error(`Backend server returned an invalid response or could not connect.`);
             }
 
             const data = await response.json();
