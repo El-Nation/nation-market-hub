@@ -1513,7 +1513,7 @@ app.post("/api/auth/forgot-password", async (req, res) => {
                 [resetToken, expiresAt, user.id]
             );
 
-            const appUrl = process.env.APP_URL || 'http://localhost:5173';
+            const appUrl = process.env.APP_URL || (process.env.NODE_ENV === 'production' ? 'https://nationmarkethub.eghedev.com' : 'http://localhost:5173');
             const resetUrl = `${appUrl}?reset_token=${resetToken}`;
 
             await sendPasswordResetEmail({

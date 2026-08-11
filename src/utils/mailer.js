@@ -87,7 +87,7 @@ const sendEnquiryNotificationToProvider = async ({
 }) => {
     const fromAddress = process.env.SMTP_FROM || '"Nation Market Hub" <no-reply@nationmarkethub.com>';
     const subject = `[Nation Market Hub] New Service Request from ${customerName}`;
-    const dashboardUrl = process.env.APP_URL || 'http://localhost:5173';
+    const dashboardUrl = process.env.APP_URL || (process.env.NODE_ENV === 'production' ? 'https://nationmarkethub.eghedev.com' : 'http://localhost:5173');
 
     const textContent = `
 Hello ${providerName || businessName || 'Service Provider'},
@@ -246,7 +246,7 @@ const sendStatusUpdateNotificationToCustomer = async ({
     const fromAddress = process.env.SMTP_FROM || '"Nation Market Hub" <no-reply@nationmarkethub.com>';
     const statusText = status.toUpperCase();
     const subject = `[Nation Market Hub] Update on your request with ${businessName || 'Service Provider'}`;
-    const dashboardUrl = process.env.APP_URL || 'http://localhost:5173';
+    const dashboardUrl = process.env.APP_URL || (process.env.NODE_ENV === 'production' ? 'https://nationmarkethub.eghedev.com' : 'http://localhost:5173');
 
     const textContent = `
 Hello ${customerName},
@@ -380,7 +380,7 @@ const sendEnquiryConfirmationToCustomer = async ({
 
     const fromAddress = process.env.SMTP_FROM || '"Nation Market Hub" <no-reply@nationmarkethub.com>';
     const subject = `[Nation Market Hub] Service Request Confirmation - ${businessName || providerName || 'Service Provider'}`;
-    const dashboardUrl = process.env.APP_URL || 'http://localhost:5173';
+    const dashboardUrl = process.env.APP_URL || (process.env.NODE_ENV === 'production' ? 'https://nationmarkethub.eghedev.com' : 'http://localhost:5173');
 
     const textContent = `
 Hello ${customerName},
