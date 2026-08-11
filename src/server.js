@@ -4,6 +4,7 @@ require("dotenv").config();
 const crypto = require("crypto");
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const db = require("./config/db");
@@ -2036,6 +2037,16 @@ app.get("/api/admin/stats", authenticateToken, requireRole("admin"), async (req,
         });
     }
 });
+
+// Serve static files from the React app in production
+if (process.env.NODE_ENV === "production") {
+    app.use(express.static(path.join(__dirname, "../client/dist")));
+    
+    // Catch-all route to serve React's index.html for any unmatched routes
+    app.get("*", (req, res) => {
+        res.sendFile(path.join(__dirname, "../client/dist/index.html"));
+    });
+}
 
 // Start the server and test database connectivity
 app.listen(PORT, async () => {
