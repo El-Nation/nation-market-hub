@@ -265,10 +265,9 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ userType, us
       {/* Popover Dropdown */}
       {isOpen && (
         <div
+          className="notification-dropdown"
           style={{
             position: 'absolute',
-            right: 0,
-            top: 'calc(100% + 10px)',
             width: '360px',
             maxWidth: '90vw',
             backgroundColor: '#ffffff',

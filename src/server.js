@@ -2037,8 +2037,33 @@ app.get("/api/admin/stats", authenticateToken, requireRole("admin"), async (req,
         });
     }
 });
+// POST /api/contact - Platform generic helpdesk ticket bridge
+app.post("/api/contact", async (req, res) => {
+    try {
+        const { email, message } = req.body;
+        if (!email || !message) {
+            return res.status(400).json({ success: false, error: "Email and message are strictly required." });
+        }
+        
+        await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: "eghedestiny10@gmail.com",
+            replyTo: email,
+            subject: "New Service Marketplace Support Request",
+            text: `You have received a new support request from: ${email}\n\nMessage:\n${message}`,
+            html: `<p><strong>You have received a new support request from:</strong> <a href="mailto:${email}">${email}</a></p>
+                   <h3>Message:</h3>
+                   <p style="white-space: pre-wrap; font-size: 16px;">${message}</p>`
+        });
+        
+        res.json({ success: true, message: "Support ticket submitted successfully." });
+    } catch (err) {
+        console.error("Support Contact Error:", err);
+        res.status(500).json({ success: false, error: "Failed to dispatch the support request email." });
+    }
+});
 
-// Serve static files from the React app in production
+// Serve frontend in production
 if (process.env.NODE_ENV === "production") {
     app.use(express.static(path.join(__dirname, "../client/dist")));
     

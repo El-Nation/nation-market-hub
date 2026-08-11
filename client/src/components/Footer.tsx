@@ -4,9 +4,10 @@ import { Mail, Phone } from 'lucide-react';
 interface FooterProps {
     onCategorySearch?: (term: string) => void;
     onOpenProviderRegister?: () => void;
+    onOpenContactSupport?: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onCategorySearch, onOpenProviderRegister }) => {
+export const Footer: React.FC<FooterProps> = ({ onCategorySearch, onOpenProviderRegister, onOpenContactSupport }) => {
     return (
         <footer className="footer">
             <div className="container">
@@ -59,7 +60,7 @@ export const Footer: React.FC<FooterProps> = ({ onCategorySearch, onOpenProvider
                             <li><a href="/help" onClick={(e) => { e.preventDefault(); window.scrollTo(0, 0); }}>Help & FAQs</a></li>
                             <li><a href="/terms" onClick={(e) => { e.preventDefault(); window.scrollTo(0, 0); }}>Terms of Service</a></li>
                             <li><a href="/privacy" onClick={(e) => { e.preventDefault(); window.scrollTo(0, 0); }}>Privacy Policy</a></li>
-                            <li><a href="mailto:eghedestiny10@gmail.com">Contact Support</a></li>
+                            <li><a href="#contact" onClick={(e) => { if(onOpenContactSupport) { e.preventDefault(); onOpenContactSupport(); } }}>Contact Support</a></li>
                         </ul>
                     </div>
                 </div>

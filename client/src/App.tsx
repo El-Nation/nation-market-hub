@@ -13,6 +13,7 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { CustomerDashboard } from './components/CustomerDashboard';
 import { ProviderCTA } from './components/ProviderCTA';
 import { Footer } from './components/Footer';
+import { ContactSupportModal } from './components/ContactSupportModal';
 import type { Provider, Category } from './types';
 
 export function App() {
@@ -22,6 +23,7 @@ export function App() {
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState<boolean>(false);
     const [isCustomerRegisterModalOpen, setIsCustomerRegisterModalOpen] = useState<boolean>(false);
     const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
+    const [isContactModalOpen, setIsContactModalOpen] = useState<boolean>(false);
     const [searchTerm, setSearchTerm] = useState<string>('');
 
     // Provider Authentication State
@@ -206,6 +208,12 @@ export function App() {
             <Footer 
                 onCategorySearch={handleHeroSearch} 
                 onOpenProviderRegister={() => setIsRegisterModalOpen(true)} 
+                onOpenContactSupport={() => setIsContactModalOpen(true)}
+            />
+
+            <ContactSupportModal 
+                isOpen={isContactModalOpen} 
+                onClose={() => setIsContactModalOpen(false)} 
             />
 
             <CategoryServicesModal

@@ -438,3 +438,15 @@ button {
 }
 
 .glass-panel { max-width: 95vw !important; }
+
+/* Notification Dropdown Origin Control */
+.notification-dropdown {
+  right: 0;
+  top: calc(100% + 10px);
+}
+@media (max-width: 640px) {
+  .notification-dropdown {
+    right: auto;
+    left: 0;
+  }
+}
