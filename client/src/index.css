@@ -286,10 +286,19 @@ button {
 }
 
 .footer-grid {
-  display: grid;
-  grid-template-columns: 2fr repeat(3, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
   gap: 2.5rem;
   margin-bottom: 2.5rem;
+}
+
+.footer-grid > div:first-child {
+  flex: 1 1 300px;
+}
+
+.footer-column {
+  flex: 1 1 160px;
 }
 
 .footer-brand-desc {
@@ -333,9 +342,7 @@ button {
 
 /* Mobile Responsiveness (Tablets & Below) */
 @media (max-width: 900px) {
-  .footer-grid {
-    grid-template-columns: 1fr 1fr;
-  }
+  /* Let Flex wrap naturally handle Footer instead of explicit grid columns */
 }
 
 @media (max-width: 768px) {
@@ -393,9 +400,15 @@ button {
   }
 
   .footer-grid {
-    grid-template-columns: 1fr;
+    justify-content: center;
     text-align: center;
-    gap: 2rem;
+    gap: 2.5rem;
+  }
+  
+  .footer-grid > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
   
   .footer-brand-desc {

@@ -41,8 +41,8 @@ export const Footer: React.FC = () => {
                     <div className="footer-column">
                         <h4>Platform</h4>
                         <ul>
-                            <li><a href="#categories">Browse Services</a></li>
-                            <li><a href="#provider-signup">Become a Provider</a></li>
+                            <li><a href="#providers-search">Browse Services</a></li>
+                            <li><a href="#provider-cta">Become a Provider</a></li>
                             <li><a href="#how-it-works">How it Works</a></li>
                             <li><a href="#pricing">Pricing & Fees</a></li>
                         </ul>
@@ -51,10 +51,10 @@ export const Footer: React.FC = () => {
                     <div className="footer-column">
                         <h4>Support & Legal</h4>
                         <ul>
-                            <li><a href="#help">Help & FAQs</a></li>
-                            <li><a href="#terms">Terms of Service</a></li>
-                            <li><a href="#privacy">Privacy Policy</a></li>
-                            <li><a href="#contact">Contact Support</a></li>
+                            <li><a href="/help" onClick={(e) => { e.preventDefault(); window.scrollTo(0, 0); }}>Help & FAQs</a></li>
+                            <li><a href="/terms" onClick={(e) => { e.preventDefault(); window.scrollTo(0, 0); }}>Terms of Service</a></li>
+                            <li><a href="/privacy" onClick={(e) => { e.preventDefault(); window.scrollTo(0, 0); }}>Privacy Policy</a></li>
+                            <li><a href="mailto:eghedestiny10@gmail.com">Contact Support</a></li>
                         </ul>
                     </div>
                 </div>
