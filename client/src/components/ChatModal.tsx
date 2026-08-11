@@ -9,6 +9,7 @@ interface ChatMessage {
   sender_name: string;
   message_text: string;
   created_at: string;
+  sender_avatar?: string;
 }
 
 interface ChatModalProps {
@@ -417,34 +418,47 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                   >
                     {msg.sender_name} ({msg.sender_type})
                   </span>
-                  <div
-                    style={{
-                      maxWidth: '85%',
-                      padding: '0.75rem 1.1rem',
-                      borderRadius: isMine ? '18px 18px 2px 18px' : '18px 18px 18px 2px',
-                      backgroundColor: isMine ? '#0284c7' : '#ffffff',
-                      color: isMine ? '#ffffff' : '#0f172a',
-                      border: isMine ? 'none' : '1px solid #e2e8f0',
-                      boxShadow: isMine
-                        ? '0 3px 8px rgba(2, 132, 199, 0.25)'
-                        : '0 2px 6px rgba(0, 0, 0, 0.04)',
-                      fontSize: '0.9rem',
-                      lineHeight: '1.5',
-                    }}
-                  >
+                  <div style={{ display: 'flex', gap: '0.5rem', flexDirection: isMine ? 'row-reverse' : 'row', alignItems: 'flex-end', maxWidth: '95%' }}>
+                    {msg.sender_avatar ? (
+                      <img 
+                        src={msg.sender_avatar} 
+                        alt={msg.sender_name}
+                        style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                      />
+                    ) : (
+                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: isMine ? '#e0f2fe' : '#f1f5f9', color: isMine ? '#0284c7' : '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '0.75rem', fontWeight: 800, border: '1px solid #cbd5e1' }}>
+                        {msg.sender_name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div
+                      style={{
+                        padding: '0.75rem 1.1rem',
+                        borderRadius: isMine ? '18px 18px 2px 18px' : '18px 18px 18px 2px',
+                        backgroundColor: isMine ? '#0284c7' : '#ffffff',
+                        color: isMine ? '#ffffff' : '#0f172a',
+                        border: isMine ? 'none' : '1px solid #e2e8f0',
+                        boxShadow: isMine
+                          ? '0 3px 8px rgba(2, 132, 199, 0.25)'
+                          : '0 2px 6px rgba(0, 0, 0, 0.04)',
+                        fontSize: '0.9rem',
+                        lineHeight: '1.5',
+                        maxWidth: '100%',
+                      }}
+                    >
                     <p style={{ margin: 0, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                       {msg.message_text}
                     </p>
-                    <div
-                      style={{
-                        fontSize: '0.68rem',
-                        marginTop: '0.35rem',
-                        textAlign: 'right',
-                        fontWeight: 600,
-                        color: isMine ? '#e0f2fe' : '#94a3b8',
-                      }}
-                    >
-                      {formattedTime}
+                      <div
+                        style={{
+                          fontSize: '0.68rem',
+                          marginTop: '0.35rem',
+                          textAlign: 'right',
+                          fontWeight: 600,
+                          color: isMine ? '#e0f2fe' : '#94a3b8',
+                        }}
+                      >
+                        {formattedTime}
+                      </div>
                     </div>
                   </div>
                 </div>

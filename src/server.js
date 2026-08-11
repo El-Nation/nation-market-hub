@@ -852,9 +852,17 @@ app.get("/api/enquiries/:id/messages", async (req, res) => {
         }
 
         const queryText = `
-            SELECT * FROM enquiry_messages 
-            WHERE enquiry_id = $1 
-            ORDER BY created_at ASC;
+            SELECT m.*,
+                   CASE 
+                     WHEN m.sender_type = 'provider' THEN p.avatar_url
+                     WHEN m.sender_type = 'customer' THEN c.avatar_url
+                   END as sender_avatar
+            FROM enquiry_messages m
+            JOIN service_enquiries e ON m.enquiry_id = e.id
+            LEFT JOIN provider_profiles p ON e.provider_id = p.id
+            LEFT JOIN customers c ON e.customer_id = c.id
+            WHERE m.enquiry_id = $1 
+            ORDER BY m.created_at ASC;
         `;
         const result = await db.query(queryText, [id]);
         res.json({
