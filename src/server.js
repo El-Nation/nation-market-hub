@@ -2059,6 +2059,6 @@ app.listen(PORT, async () => {
         const res = await db.query("SELECT NOW();");
         console.log("Database connection successful at:", res.rows[0].now);
     } catch (err) {
-        console.error("Warning: Initial database connection check failed:", err.message);
+        console.error("CRITICAL DB STARTUP ERROR:", err);
     }
 });
