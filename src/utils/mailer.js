@@ -644,9 +644,71 @@ ${EMAIL_FOOTER_TEXT}
     }
 };
 
+/**
+ * Send general administrative notifications to Super Admin
+ */
+const sendAdminNotificationEmail = async ({ subject, textContent, htmlContent }) => {
+    const adminEmail = process.env.ADMIN_EMAIL || 'eghedestiny10@gmail.com';
+    const fromAddress = process.env.SMTP_FROM || '"Nation Market Hub" <no-reply@nationmarkethub.com>';
+    const logoHtml = getLogoHeaderHtml();
+
+    const finalHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"><title>Admin Alert</title></head>
+    <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="padding: 20px;">
+            <tr>
+                <td align="center">
+                    <table width="100%" style="max-width: 600px; background: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
+                        <tr>
+                            <td style="background: #0f172a; padding: 20px; text-align: center; border-bottom: 3px solid #0284c7;">
+                                ${logoHtml}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 30px;">
+                                <h2 style="color: #0284c7; margin-top: 0;">🚨 Platform Activity Alert</h2>
+                                <div style="color: #334155; font-size: 15px; line-height: 1.6;">
+                                    ${htmlContent}
+                                </div>
+                            </td>
+                        </tr>
+                        ${EMAIL_FOOTER_HTML}
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    `;
+
+    try {
+        const transporter = createTransporter();
+        if (!transporter) {
+            console.log(`\n📧 [EMAIL FALLBACK] Admin Alert:\nSubject: ${subject}\n${textContent}\n`);
+            return { success: true };
+        }
+
+        await transporter.sendMail({
+            from: fromAddress,
+            to: adminEmail,
+            subject,
+            text: textContent,
+            html: finalHtml,
+            attachments: getAttachments(),
+        });
+        return { success: true };
+    } catch (err) {
+        console.error('❌ Error sending admin alert email:', err.message);
+        return { success: false, error: err.message };
+    }
+};
+
 module.exports = {
     sendEnquiryNotificationToProvider,
     sendStatusUpdateNotificationToCustomer,
     sendEnquiryConfirmationToCustomer,
     sendPasswordResetEmail,
+    sendAdminNotificationEmail,
 };

@@ -271,12 +271,21 @@ app.post("/api/providers/register", async (req, res) => {
     }
 
     try {
-        // Check if provider email already exists
-        const existingCheck = await db.query("SELECT id FROM provider_profiles WHERE LOWER(email) = LOWER($1);", [email]);
+        const cleanEmail = email.trim().toLowerCase();
+        const cleanPhone = phone.trim().replace(/\s+/g, '');
+        
+        // Ensure email AND phone uniqueness universally across both tables
+        const existingCheck = await db.query(`
+            SELECT id FROM provider_profiles WHERE LOWER(email) = $1 OR phone = $2
+            UNION
+            SELECT id FROM customers WHERE LOWER(email) = $1 OR phone = $2
+            LIMIT 1;
+        `, [cleanEmail, cleanPhone]);
+
         if (existingCheck.rows.length > 0) {
             return res.status(409).json({
                 success: false,
-                message: "An account with this email address already exists.",
+                message: "An account with this email address or phone number is already registered.",
             });
         }
 
@@ -324,6 +333,12 @@ app.post("/api/providers/register", async (req, res) => {
             title: 'New Provider Registration',
             message: `${newProvider.business_name || newProvider.full_name} registered as a service provider (Pending approval).`,
             link: '/admin-dashboard'
+        });
+
+        await sendAdminNotificationEmail({
+            subject: "[Nation Market Hub] New Service Provider Registered (Pending Moderation)",
+            textContent: `A new Service Provider has registered and awaits approval.\nBusiness Name: ${newProvider.business_name || newProvider.full_name}\nEmail: ${newProvider.email}\nPhone: ${newProvider.phone}`,
+            htmlContent: `<p>A new <strong>Service Provider</strong> has registered on the platform.</p><ul><li><strong>Name/Business:</strong> ${newProvider.business_name || newProvider.full_name}</li><li><strong>Email:</strong> ${newProvider.email}</li><li><strong>Phone:</strong> ${newProvider.phone}</li></ul><p>Please log in to the admin dashboard to review and approve their account.</p>`,
         });
 
         res.status(201).json({
@@ -1038,16 +1053,20 @@ app.post("/api/customers/register", async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
 
     try {
-        // Check if email already registered in customers or providers
-        const [existingCustomer, existingProvider] = await Promise.all([
-            db.query("SELECT id FROM customers WHERE LOWER(email) = $1;", [cleanEmail]),
-            db.query("SELECT id FROM provider_profiles WHERE LOWER(email) = $1;", [cleanEmail]),
-        ]);
+        const cleanPhone = phone.trim().replace(/\s+/g, '');
+        
+        // Ensure email AND phone uniqueness universally across both tables
+        const existingCheck = await db.query(`
+            SELECT id FROM customers WHERE LOWER(email) = $1 OR phone = $2
+            UNION
+            SELECT id FROM provider_profiles WHERE LOWER(email) = $1 OR phone = $2
+            LIMIT 1;
+        `, [cleanEmail, cleanPhone]);
 
-        if (existingCustomer.rows.length > 0 || existingProvider.rows.length > 0) {
+        if (existingCheck.rows.length > 0) {
             return res.status(409).json({
                 success: false,
-                message: "An account with this email address already exists.",
+                message: "An account with this email address or phone number is already registered.",
             });
         }
 
@@ -1074,6 +1093,12 @@ app.post("/api/customers/register", async (req, res) => {
             title: 'New Customer Registered',
             message: `${customer.full_name} registered a new customer account (${customer.email}).`,
             link: '/admin-dashboard'
+        });
+
+        await sendAdminNotificationEmail({
+            subject: "[Nation Market Hub] New Customer Registered",
+            textContent: `A new Customer has registered.\nName: ${customer.full_name}\nEmail: ${customer.email}\nPhone: ${customer.phone}`,
+            htmlContent: `<p>A new <strong>Customer</strong> has registered on the platform.</p><ul><li><strong>Name:</strong> ${customer.full_name}</li><li><strong>Email:</strong> ${customer.email}</li><li><strong>Phone:</strong> ${customer.phone}</li></ul>`,
         });
 
         // Sign JWT Token
