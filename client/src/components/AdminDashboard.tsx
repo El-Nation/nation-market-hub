@@ -22,6 +22,7 @@ import { AvatarUploadModal } from './AvatarUploadModal';
 interface AdminDashboardProps {
     admin: { name: string; email: string; role: string; two_factor_enabled?: boolean; avatar_url?: string };
     onLogout: () => void;
+    onUpdateAdmin?: (updatedAdmin: any) => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ admin, onLogout }) => {
