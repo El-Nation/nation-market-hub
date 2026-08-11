@@ -27,9 +27,10 @@ if (!process.env.JWT_SECRET) {
     process.exit(1);
 }
 
-// Enable CORS and JSON body parsing middleware
+// Enable CORS and highly expanded JSON body parsing middleware for Base64 image payload handling
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Authentication Middleware: Verify JWT Bearer Token
 const authenticateToken = (req, res, next) => {
@@ -2037,6 +2038,48 @@ app.get("/api/admin/stats", authenticateToken, requireRole("admin"), async (req,
         });
     }
 });
+// PUT /api/admin/avatar - Update Admin Profile Picture
+app.put("/api/admin/avatar", authenticateToken, requireRole("admin"), async (req, res) => {
+    try {
+        const { avatar_url } = req.body;
+        await db.query("UPDATE admins SET avatar_url = $1 WHERE email = $2", [avatar_url, req.user.email]);
+        res.json({ success: true, message: "Admin avatar updated successfully" });
+    } catch (error) {
+        console.error("Error updating admin avatar:", error.message);
+        res.status(500).json({ success: false, message: "Failed to update admin avatar" });
+    }
+});
+
+// PATCH /api/providers/:id/avatar - Update Provider Profile Picture
+app.patch("/api/providers/:id/avatar", authenticateToken, async (req, res) => {
+    try {
+        const { avatar_url } = req.body;
+        await db.query("UPDATE provider_profiles SET avatar_url = $1 WHERE id = $2", [avatar_url, req.params.id]);
+        res.json({ success: true, message: "Provider avatar updated successfully" });
+    } catch (error) {
+        console.error("Error updating provider avatar:", error.message);
+        res.status(500).json({ success: false, message: "Failed to update provider avatar" });
+    }
+});
+
+// PUT /api/customers/profile - Update Customer Profile Picture
+app.put("/api/customers/profile", authenticateToken, async (req, res) => {
+    try {
+        const { avatar_url } = req.body;
+        const result = await db.query(
+            "UPDATE users SET avatar_url = $1 WHERE email = $2 RETURNING *", 
+            [avatar_url, req.user.email]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+        res.json({ success: true, message: "Customer avatar updated", user: result.rows[0] });
+    } catch (error) {
+        console.error("Error updating customer avatar:", error.message);
+        res.status(500).json({ success: false, message: "Failed to update customer avatar" });
+    }
+});
+
 // POST /api/contact - Platform generic helpdesk ticket bridge
 app.post("/api/contact", async (req, res) => {
     try {
