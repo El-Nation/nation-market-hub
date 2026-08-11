@@ -1,7 +1,12 @@
 import React from 'react';
 import { Mail, Phone } from 'lucide-react';
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+    onCategorySearch?: (term: string) => void;
+    onOpenProviderRegister?: () => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ onCategorySearch, onOpenProviderRegister }) => {
     return (
         <footer className="footer">
             <div className="container">
@@ -30,11 +35,11 @@ export const Footer: React.FC = () => {
                     <div className="footer-column">
                         <h4>Popular Categories</h4>
                         <ul>
-                            <li><a href="#categories">Home & Repairs</a></li>
-                            <li><a href="#categories">Technology</a></li>
-                            <li><a href="#categories">Education</a></li>
-                            <li><a href="#categories">Beauty & Personal Care</a></li>
-                            <li><a href="#categories">Transport & Auto</a></li>
+                            <li><a href="#providers-search" onClick={() => onCategorySearch && onCategorySearch('Home & Repairs')}>Home & Repairs</a></li>
+                            <li><a href="#providers-search" onClick={() => onCategorySearch && onCategorySearch('Technology')}>Technology</a></li>
+                            <li><a href="#providers-search" onClick={() => onCategorySearch && onCategorySearch('Education')}>Education</a></li>
+                            <li><a href="#providers-search" onClick={() => onCategorySearch && onCategorySearch('Beauty & Personal Care')}>Beauty & Personal Care</a></li>
+                            <li><a href="#providers-search" onClick={() => onCategorySearch && onCategorySearch('Transport & Auto')}>Transport & Auto</a></li>
                         </ul>
                     </div>
 
@@ -42,7 +47,7 @@ export const Footer: React.FC = () => {
                         <h4>Platform</h4>
                         <ul>
                             <li><a href="#providers-search">Browse Services</a></li>
-                            <li><a href="#provider-cta">Become a Provider</a></li>
+                            <li><a href="#provider-cta" onClick={(e) => { if (onOpenProviderRegister) { e.preventDefault(); onOpenProviderRegister(); } }}>Become a Provider</a></li>
                             <li><a href="#how-it-works">How it Works</a></li>
                             <li><a href="#pricing">Pricing & Fees</a></li>
                         </ul>

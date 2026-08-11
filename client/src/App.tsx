@@ -203,7 +203,10 @@ export function App() {
                 )}
             </main>
 
-            <Footer />
+            <Footer 
+                onCategorySearch={handleHeroSearch} 
+                onOpenProviderRegister={() => setIsRegisterModalOpen(true)} 
+            />
 
             <CategoryServicesModal
                 category={selectedCategory}
