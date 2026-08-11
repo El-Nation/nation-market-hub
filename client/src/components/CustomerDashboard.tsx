@@ -35,6 +35,7 @@ interface CustomerDashboardProps {
         two_factor_enabled?: boolean;
     };
     onLogout: () => void;
+    onUpdateCustomer?: (updatedCustomer: any) => void;
 }
 
 const PRESET_AVATARS = [
@@ -46,7 +47,7 @@ const PRESET_AVATARS = [
     'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=300&q=80',
 ];
 
-export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({ customer, onLogout }) => {
+export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({ customer, onLogout, onUpdateCustomer }) => {
     const [currentCustomer, setCurrentCustomer] = useState(customer);
     const [enquiries, setEnquiries] = useState<ServiceEnquiry[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
@@ -144,6 +145,9 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({ customer, 
             }
 
             setCurrentCustomer((prev) => ({ ...prev, avatar_url: data.user.avatar_url }));
+            if (onUpdateCustomer) {
+                onUpdateCustomer({ ...customer, avatar_url: data.user.avatar_url });
+            }
             setIsAvatarModalOpen(false);
         } catch (err: any) {
             setAvatarError(err.message || 'Error updating avatar picture');

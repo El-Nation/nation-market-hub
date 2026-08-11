@@ -176,11 +176,11 @@ export function App() {
 
             <main style={{ flex: 1 }}>
                 {viewingAdminDashboard && currentAdmin ? (
-                    <AdminDashboard admin={currentAdmin} onLogout={handleAdminLogout} />
+                    <AdminDashboard admin={currentAdmin} onLogout={handleAdminLogout} onUpdateAdmin={setCurrentAdmin as any} />
                 ) : viewingDashboard && currentProvider ? (
-                    <ProviderDashboard provider={currentProvider} onLogout={handleLogout} />
+                    <ProviderDashboard provider={currentProvider} onLogout={handleLogout} onUpdateProvider={setCurrentProvider} />
                 ) : viewingCustomerDashboard && currentCustomer ? (
-                    <CustomerDashboard customer={currentCustomer} onLogout={handleCustomerLogout} />
+                    <CustomerDashboard customer={currentCustomer} onLogout={handleCustomerLogout} onUpdateCustomer={setCurrentCustomer} />
                 ) : (
                     <>
                         <Hero onSearch={handleHeroSearch} />

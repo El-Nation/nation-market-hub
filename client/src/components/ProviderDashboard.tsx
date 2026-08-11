@@ -38,9 +38,10 @@ interface Enquiry {
 interface ProviderDashboardProps {
     provider: Provider & { two_factor_enabled?: boolean };
     onLogout: () => void;
+    onUpdateProvider?: (updatedProvider: Provider) => void;
 }
 
-export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, onLogout }) => {
+export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, onLogout, onUpdateProvider }) => {
     const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -74,6 +75,9 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
                         sessionObj.avatar_url = newAvatarUrl;
                         localStorage.setItem('provider', JSON.stringify(sessionObj));
                     } catch (e) {}
+                }
+                if (onUpdateProvider) {
+                    onUpdateProvider({ ...provider, avatar_url: newAvatarUrl });
                 }
             }
         } catch (err) {
