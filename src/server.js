@@ -2046,7 +2046,7 @@ if (process.env.NODE_ENV === "production") {
     app.use(express.static(path.join(__dirname, "../client/dist")));
     
     // Catch-all route to serve React's index.html for any unmatched routes
-    app.get("/{*splat}", (req, res) => {
+    app.use((req, res) => {
         res.sendFile(path.join(__dirname, "../client/dist/index.html"));
     });
 }
