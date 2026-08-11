@@ -46,7 +46,7 @@ export const SecuritySettingsModal: React.FC<SecuritySettingsModalProps> = ({
   const [twoFactorMessage, setTwoFactorMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [copiedSecret, setCopiedSecret] = useState(false);
 
-  const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+  const API_BASE = import.meta.env.VITE_API_URL || '${import.meta.env.VITE_API_URL}';
 
   useEffect(() => {
     if (isOpen) {
@@ -286,7 +286,7 @@ export const SecuritySettingsModal: React.FC<SecuritySettingsModalProps> = ({
         style={{ 
           maxWidth: '550px', 
           width: '95%',
-          maxHeight: '90vh',
+          maxHeight: '85vh',
           overflowY: 'auto',
           backgroundColor: '#ffffff', 
           padding: 0, 

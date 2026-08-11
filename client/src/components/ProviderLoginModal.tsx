@@ -28,7 +28,7 @@ export const ProviderLoginModal: React.FC<ProviderLoginModalProps> = ({
         setSubmitting(true);
 
         try {
-            const response = await fetch('http://localhost:5000/api/providers/login', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/providers/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),

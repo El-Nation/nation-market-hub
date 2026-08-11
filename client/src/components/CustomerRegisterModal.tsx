@@ -31,7 +31,7 @@ export const CustomerRegisterModal: React.FC<CustomerRegisterModalProps> = ({
         setSubmitting(true);
 
         try {
-            const response = await fetch('http://localhost:5000/api/customers/register', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/customers/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -45,7 +45,7 @@ export const CustomerRegisterModal: React.FC<CustomerRegisterModalProps> = ({
 
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
-                throw new Error('Backend server is not running on http://localhost:5000 or returned invalid response. Please start `node src/server.js`.');
+                throw new Error('Backend server is not running on ${import.meta.env.VITE_API_URL} or returned invalid response. Please start `node src/server.js`.');
             }
 
             const data = await response.json();
@@ -68,7 +68,7 @@ export const CustomerRegisterModal: React.FC<CustomerRegisterModalProps> = ({
 
     return (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-            <div className="glass-panel" style={{ width: '100%', maxWidth: '480px', padding: '2rem', background: '#ffffff', border: '1px solid #cbd5e1', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="glass-panel" style={{ width: '100%', maxWidth: '480px', padding: '2rem', background: '#ffffff', border: '1px solid #cbd5e1', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', maxHeight: '85vh', overflowY: 'auto' }}>
                 <button
                     onClick={onClose}
                     style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: '#f1f5f9', border: 'none', color: '#475569', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}

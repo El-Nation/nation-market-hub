@@ -58,7 +58,7 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
 
     const handleSaveAvatar = async (newAvatarUrl: string) => {
         try {
-            const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+            const API_BASE = import.meta.env.VITE_API_URL || '${import.meta.env.VITE_API_URL}';
             const res = await fetch(`${API_BASE}/api/providers/${provider.id}/avatar`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
@@ -97,7 +97,7 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
     const fetchEnquiries = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/providers/${provider.id}/enquiries`);
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/providers/${provider.id}/enquiries`);
             const data = await res.json();
             if (data.success) {
                 setEnquiries(data.data);
@@ -122,7 +122,7 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
                 headers['Authorization'] = `Bearer ${token}`;
             }
 
-            const res = await fetch(`http://localhost:5000/api/enquiries/${enquiryId}/status`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/enquiries/${enquiryId}/status`, {
                 method: 'PATCH',
                 headers,
                 body: JSON.stringify({ status: newStatus }),

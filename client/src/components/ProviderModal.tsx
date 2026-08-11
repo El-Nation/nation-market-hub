@@ -35,7 +35,7 @@ export const ProviderModal: React.FC<ProviderModalProps> = ({ provider, initialM
     const fetchReviews = async () => {
         setLoadingReviews(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/providers/${provider.id}/reviews`);
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/providers/${provider.id}/reviews`);
             const data = await res.json();
             if (data.success) {
                 setReviews(data.data);
@@ -60,7 +60,7 @@ export const ProviderModal: React.FC<ProviderModalProps> = ({ provider, initialM
         setSubmitting(true);
 
         try {
-            const response = await fetch('http://localhost:5000/api/enquiries', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/enquiries`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -92,7 +92,7 @@ export const ProviderModal: React.FC<ProviderModalProps> = ({ provider, initialM
         setSubmitting(true);
 
         try {
-            const response = await fetch(`http://localhost:5000/api/providers/${provider.id}/reviews`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/providers/${provider.id}/reviews`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -122,7 +122,7 @@ export const ProviderModal: React.FC<ProviderModalProps> = ({ provider, initialM
 
     return (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-            <div className="glass-panel" style={{ width: '100%', maxWidth: '620px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', background: '#ffffff', border: '1px solid #cbd5e1', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <div className="glass-panel" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflowY: 'auto', padding: '2rem', background: '#ffffff', border: '1px solid #cbd5e1', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
                 <button
                     onClick={onClose}
                     style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: '#f1f5f9', border: 'none', color: '#475569', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}

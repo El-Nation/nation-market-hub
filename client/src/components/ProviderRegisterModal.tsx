@@ -28,7 +28,7 @@ export const ProviderRegisterModal: React.FC<ProviderRegisterModalProps> = ({ is
     const [bio, setBio] = useState('');
 
     useEffect(() => {
-        fetch('http://localhost:5000/api/categories')
+        fetch(`${import.meta.env.VITE_API_URL}/api/categories`)
             .then((res) => res.json())
             .then((data) => {
                 if (data.success) {
@@ -50,7 +50,7 @@ export const ProviderRegisterModal: React.FC<ProviderRegisterModalProps> = ({ is
             .filter((s) => s.length > 0);
 
         try {
-            const response = await fetch('http://localhost:5000/api/providers/register', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/providers/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -82,7 +82,7 @@ export const ProviderRegisterModal: React.FC<ProviderRegisterModalProps> = ({ is
 
     return (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-            <div className="glass-panel" style={{ width: '100%', maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', background: '#ffffff', border: '1px solid #cbd5e1', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <div className="glass-panel" style={{ width: '100%', maxWidth: '640px', maxHeight: '85vh', overflowY: 'auto', padding: '2rem', background: '#ffffff', border: '1px solid #cbd5e1', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
                 <button
                     onClick={onClose}
                     style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: '#f1f5f9', border: 'none', color: '#475569', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}

@@ -92,10 +92,10 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({ customer, 
                 headers['Authorization'] = `Bearer ${token}`;
             }
 
-            const res = await fetch('http://localhost:5000/api/customers/enquiries', { headers });
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/customers/enquiries`, { headers });
             const contentType = res.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
-                setError('Backend server is not running on http://localhost:5000 or returned invalid response.');
+                setError('Backend server is not running on ${import.meta.env.VITE_API_URL} or returned invalid response.');
                 return;
             }
             const data = await res.json();
@@ -127,7 +127,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({ customer, 
                 headers['Authorization'] = `Bearer ${token}`;
             }
 
-            const res = await fetch('http://localhost:5000/api/customers/profile', {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/customers/profile`, {
                 method: 'PUT',
                 headers,
                 body: JSON.stringify({ avatar_url: urlToSave }),

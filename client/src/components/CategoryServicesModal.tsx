@@ -19,7 +19,7 @@ export const CategoryServicesModal: React.FC<CategoryServicesModalProps> = ({ ca
     useEffect(() => {
         setLoading(true);
         setError(null);
-        fetch(`http://localhost:5000/api/categories/${category.slug}/services`)
+        fetch(`${import.meta.env.VITE_API_URL}/api/categories/${category.slug}/services`)
             .then((res) => {
                 if (!res.ok) throw new Error(`HTTP error ${res.status}`);
                 return res.json();
@@ -46,7 +46,7 @@ export const CategoryServicesModal: React.FC<CategoryServicesModalProps> = ({ ca
 
     return (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-            <div className="glass-panel" style={{ width: '100%', maxWidth: '680px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', background: '#ffffff', border: '1px solid #cbd5e1', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <div className="glass-panel" style={{ width: '100%', maxWidth: '680px', maxHeight: '85vh', overflowY: 'auto', padding: '2rem', background: '#ffffff', border: '1px solid #cbd5e1', position: 'relative', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
                 <button
                     onClick={onClose}
                     style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: '#f1f5f9', border: 'none', color: '#475569', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
@@ -96,7 +96,7 @@ export const CategoryServicesModal: React.FC<CategoryServicesModalProps> = ({ ca
                         No services matching "{searchFilter}" under {category.name}.
                     </div>
                 ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, ), 1fr))', gap: '1rem' }}>
                         {filteredServices.map((srv) => (
                             <div
                                 key={srv.id}

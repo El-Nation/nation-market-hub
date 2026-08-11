@@ -140,7 +140,7 @@ button {
 }
 
 .hero-title {
-  font-size: 2.8rem;
+  font-size: clamp(2rem, 6vw, 2.8rem);
   font-weight: 800;
   line-height: 1.2;
   margin-bottom: 1rem;
@@ -200,7 +200,7 @@ button {
 }
 
 .section-title {
-  font-size: 1.8rem;
+  font-size: clamp(1.4rem, 4vw, 1.8rem);
   font-weight: 800;
   color: var(--text-primary);
 }
@@ -349,3 +349,13 @@ button {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+
+/* Global Mobile Overrides */
+@media (max-width: 640px) {
+  .header-content, .container, .responsive-flex { flex-wrap: wrap !important; }
+  .btn-primary, .btn-secondary { width: 100%; text-align: center; justify-content: center; }
+  .search-box { flex-direction: column; }
+}
+
+.glass-panel { max-width: 95vw !important; }

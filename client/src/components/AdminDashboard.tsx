@@ -67,8 +67,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ admin, onLogout 
             }
 
             const [providersRes, statsRes] = await Promise.all([
-                fetch(`http://localhost:5000/api/admin/providers?status=${statusFilter}`, { headers }),
-                fetch('http://localhost:5000/api/admin/stats', { headers }),
+                fetch(`${import.meta.env.VITE_API_URL}/api/admin/providers?status=${statusFilter}`, { headers }),
+                fetch(`${import.meta.env.VITE_API_URL}/api/admin/stats`, { headers }),
             ]);
 
             const providersData = await providersRes.json();
@@ -100,7 +100,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ admin, onLogout 
                 headers['Authorization'] = `Bearer ${token}`;
             }
 
-            const response = await fetch(`http://localhost:5000/api/admin/providers/${providerId}/status`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/providers/${providerId}/status`, {
                 method: 'PATCH',
                 headers,
                 body: JSON.stringify({ status: newStatus }),
@@ -120,7 +120,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ admin, onLogout 
     const handleSaveAdminAvatar = async (newAvatarUrl: string) => {
         try {
             const token = localStorage.getItem('auth_token');
-            const response = await fetch('http://localhost:5000/api/admin/avatar', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/avatar`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -335,7 +335,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ admin, onLogout 
                         </div>
                     ) : (
                         <div style={{ overflowX: 'auto' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
+                            <div className="responsive-table-wrapper" style={{ width: "100%", overflowX: "auto" }}>
+<table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
                                 <thead>
                                     <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>
                                         <th style={{ padding: '0.75rem 1rem' }}>Provider / Business</th>
@@ -437,6 +438,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ admin, onLogout 
                                     ))}
                                 </tbody>
                             </table>
+</div>
                         </div>
                     )}
                 </div>
@@ -453,7 +455,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ admin, onLogout 
                     <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b', fontSize: '0.95rem' }}>No providers available to track.</div>
                 ) : (
                     <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                        <div className="responsive-table-wrapper" style={{ width: "100%", overflowX: "auto" }}>
+<table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                             <thead>
                                 <tr style={{ background: '#f1f5f9', color: '#475569', fontWeight: 600 }}>
                                     <th style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e2e8f0' }}>Provider</th>
@@ -514,6 +517,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ admin, onLogout 
                                 })}
                             </tbody>
                         </table>
+</div>
                     </div>
                 )}
             </div>

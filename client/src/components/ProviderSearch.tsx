@@ -24,7 +24,7 @@ export const ProviderSearch: React.FC<ProviderSearchProps> = ({ initialSearchTer
 
     // Fetch Categories for dropdown
     useEffect(() => {
-        fetch('http://localhost:5000/api/categories')
+        fetch(`${import.meta.env.VITE_API_URL}/api/categories`)
             .then((res) => res.json())
             .then((data) => {
                 if (data.success) setCategories(data.data);
@@ -44,7 +44,7 @@ export const ProviderSearch: React.FC<ProviderSearchProps> = ({ initialSearchTer
             if (minRating) queryParams.append('min_rating', minRating);
             if (sortOrder) queryParams.append('sort', sortOrder);
 
-            const response = await fetch(`http://localhost:5000/api/providers?${queryParams.toString()}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/providers?${queryParams.toString()}`);
             if (!response.ok) throw new Error(`API response error: ${response.status}`);
             const data = await response.json();
             if (data.success) {
@@ -193,7 +193,7 @@ export const ProviderSearch: React.FC<ProviderSearchProps> = ({ initialSearchTer
                     </button>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, ), 1fr))', gap: '1.5rem' }}>
                     {providers.map((provider) => (
                         <ProviderCard
                             key={provider.id}

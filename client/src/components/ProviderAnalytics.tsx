@@ -22,7 +22,7 @@ export const ProviderAnalytics: React.FC<ProviderAnalyticsProps> = ({ providerId
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
+  const API_BASE = import.meta.env.VITE_API_URL || '${import.meta.env.VITE_API_URL}';
 
   const fetchAnalytics = async () => {
     setLoading(true);
@@ -125,7 +125,7 @@ export const ProviderAnalytics: React.FC<ProviderAnalyticsProps> = ({ providerId
       </div>
 
       {/* Top Stat Cards Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, ), 1fr))', gap: '1rem' }}>
         {/* Card 1: Total Enquiries */}
         <div
           style={{

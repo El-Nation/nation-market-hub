@@ -29,7 +29,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({ onSelectCategory }) 
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/categories');
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`);
                 if (!response.ok) {
                     throw new Error(`API error: ${response.status}`);
                 }
@@ -86,7 +86,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({ onSelectCategory }) 
 
                 <div style={{ 
                     display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, ), 1fr))', 
                     gap: '1.25rem' 
                 }}>
                     {categories.map((cat) => {
