@@ -183,12 +183,13 @@ app.get("/api/providers", async (req, res) => {
             paramIndex++;
         }
 
-        // Keyword search (matches full_name, business_name, bio, or services_offered)
+        // Keyword search (matches full_name, business_name, bio, services_offered, or category_name)
         if (search && search.trim() !== "") {
             conditions.push(`(
                 p.full_name ILIKE $${paramIndex} OR 
                 p.business_name ILIKE $${paramIndex} OR 
                 p.bio ILIKE $${paramIndex} OR 
+                c.name ILIKE $${paramIndex} OR 
                 array_to_string(p.services_offered, ' ') ILIKE $${paramIndex}
             )`);
             queryValues.push(`%${search.trim()}%`);
