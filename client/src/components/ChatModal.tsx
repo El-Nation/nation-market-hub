@@ -65,7 +65,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({
       }
     } catch (err: any) {
       console.error('Error loading chat messages:', err);
-      setError('Unable to load messages.');
+      // Only show the intrusive red banner on explicit active loading, or if the chat is completely empty
+      if (showLoading || messages.length === 0) {
+        setError('Unable to load messages. Please retry.');
+      }
     } finally {
       if (showLoading) setLoading(false);
     }
