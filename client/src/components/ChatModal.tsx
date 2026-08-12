@@ -206,24 +206,45 @@ export const ChatModal: React.FC<ChatModalProps> = ({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', minWidth: 0 }}>
-            <div
-              style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '50%',
-                backgroundColor: '#0284c7',
-                color: '#ffffff',
-                fontWeight: 800,
-                fontSize: '1.1rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                boxShadow: '0 4px 10px rgba(2, 132, 199, 0.4)',
-              }}
-            >
-              {partnerInitial}
-            </div>
+            {(() => {
+              const opponentAvatar = messages.find(m => m.sender_type !== currentUserType && m.sender_avatar)?.sender_avatar;
+              if (opponentAvatar) {
+                return (
+                  <img 
+                    src={opponentAvatar}
+                    alt={chatPartnerName}
+                    style={{
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      flexShrink: 0,
+                      boxShadow: '0 4px 10px rgba(0, 0, 0, 0.15)'
+                    }}
+                  />
+                );
+              }
+              return (
+                <div
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '50%',
+                    backgroundColor: '#0284c7',
+                    color: '#ffffff',
+                    fontWeight: 800,
+                    fontSize: '1.1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    boxShadow: '0 4px 10px rgba(2, 132, 199, 0.4)',
+                  }}
+                >
+                  {partnerInitial}
+                </div>
+              );
+            })()}
             <div style={{ minWidth: 0 }}>
               <h3
                 style={{
