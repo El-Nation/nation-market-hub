@@ -76,31 +76,62 @@ export const ChatModal: React.FC<ChatModalProps> = ({
 
   // Lock body scroll, handle escape key, and trigger slide animation on mount
   useEffect(() => {
+    let timeoutId: any;
+    let isMounted = true;
+    let currentInterval = 3000; // Start fast at 3 seconds
+    let idleCount = 0;
+    let lastMessageCount = 0;
+
     if (isOpen) {
       setIsVisible(true);
       document.body.style.overflow = 'hidden';
 
       const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-          onClose();
-        }
+        if (e.key === 'Escape') onClose();
       };
-
       window.addEventListener('keydown', handleKeyDown);
 
       if (enquiryId) {
         fetchMessages(true);
-        const interval = setInterval(() => {
-          fetchMessages(false);
-        }, 15000);
-        return () => {
-          document.body.style.overflow = '';
-          window.removeEventListener('keydown', handleKeyDown);
-          clearInterval(interval);
+
+        const poll = async () => {
+          if (!isMounted) return;
+          try {
+            const res = await fetch(`${API_BASE}/api/enquiries/${enquiryId}/messages`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.success && isMounted) {
+                const fetchedCount = data.data?.length || 0;
+                
+                // Adaptive Polling Logic Setup
+                if (fetchedCount > lastMessageCount) {
+                    currentInterval = 3000; // Someone sent a message! Speed up polling
+                    idleCount = 0;
+                    lastMessageCount = fetchedCount;
+                } else {
+                    idleCount++;
+                    if (idleCount > 4) currentInterval = 8000; // Backoff after 12s of idle
+                    if (idleCount > 10) currentInterval = 15000; // Maximum WAF-safe backoff
+                }
+                
+                setMessages(data.data || []);
+              }
+            }
+          } catch (e) {
+            // Silently swallow background polling errors
+          }
+
+          if (isMounted) {
+            timeoutId = setTimeout(poll, currentInterval);
+          }
         };
+
+        timeoutId = setTimeout(poll, currentInterval);
       }
 
       return () => {
+        isMounted = false;
+        clearTimeout(timeoutId);
         document.body.style.overflow = '';
         window.removeEventListener('keydown', handleKeyDown);
       };
