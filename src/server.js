@@ -545,9 +545,14 @@ app.get("/api/providers/:id/enquiries", async (req, res) => {
     const { id } = req.params;
     try {
         const queryText = `
-            SELECT e.*, p.business_name, p.full_name as provider_name 
+            SELECT 
+                e.*, 
+                p.business_name, 
+                p.full_name as provider_name,
+                c.avatar_url as customer_avatar
             FROM service_enquiries e 
             JOIN provider_profiles p ON e.provider_id = p.id 
+            LEFT JOIN customers c ON (e.customer_id = c.id OR LOWER(e.customer_email) = LOWER(c.email))
             WHERE e.provider_id = $1 
             ORDER BY e.created_at DESC;
         `;

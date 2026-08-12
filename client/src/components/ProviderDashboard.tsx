@@ -29,6 +29,7 @@ interface Enquiry {
     customer_name: string;
     customer_phone: string;
     customer_email: string | null;
+    customer_avatar?: string;
     location: string;
     service_description: string;
     status: 'pending' | 'contacted' | 'completed' | 'cancelled';
@@ -431,13 +432,25 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
                                         }}
                                     >
                                         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '1rem', alignItems: 'flex-start' }}>
-                                            <div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                    <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a' }}>{item.customer_name}</h3>
-                                                    <span style={{ background: statusInfo.bg, color: statusInfo.color, padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700 }}>
-                                                        {statusInfo.label}
-                                                    </span>
-                                                </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                                                {item.customer_avatar ? (
+                                                    <img
+                                                        src={item.customer_avatar}
+                                                        alt={item.customer_name || 'Customer'}
+                                                        style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }}
+                                                    />
+                                                ) : (
+                                                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#f1f5f9', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem' }}>
+                                                        {item.customer_name ? item.customer_name.charAt(0).toUpperCase() : 'C'}
+                                                    </div>
+                                                )}
+                                                <div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                        <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>{item.customer_name}</h3>
+                                                        <span style={{ background: statusInfo.bg, color: statusInfo.color, padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700 }}>
+                                                            {statusInfo.label}
+                                                        </span>
+                                                    </div>
                                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.4rem', fontSize: '0.875rem', color: '#475569' }}>
                                                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                                                         <Phone size={14} style={{ color: '#0284c7' }} />
@@ -458,6 +471,7 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ provider, 
                                                         {new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                     </span>
                                                 </div>
+                                            </div>
                                             </div>
 
                                             {/* Quick Actions & Status Control */}

@@ -407,9 +407,17 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({ customer, 
                             >
                                 <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                                        <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#e0f2fe', color: '#0369a1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem' }}>
-                                            {enquiry.business_name ? enquiry.business_name.charAt(0) : 'P'}
-                                        </div>
+                                        {enquiry.provider_avatar ? (
+                                            <img
+                                                src={enquiry.provider_avatar}
+                                                alt={enquiry.business_name || 'Provider'}
+                                                style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }}
+                                            />
+                                        ) : (
+                                            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#e0f2fe', color: '#0369a1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem' }}>
+                                                {enquiry.business_name ? enquiry.business_name.charAt(0) : 'P'}
+                                            </div>
+                                        )}
                                         <div>
                                             <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
                                                 {enquiry.business_name || enquiry.provider_name || 'Service Provider'}
