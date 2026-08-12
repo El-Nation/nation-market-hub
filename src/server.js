@@ -860,7 +860,7 @@ app.get("/api/enquiries/:id/messages", async (req, res) => {
             FROM enquiry_messages m
             JOIN service_enquiries e ON m.enquiry_id = e.id
             LEFT JOIN provider_profiles p ON e.provider_id = p.id
-            LEFT JOIN customers c ON e.customer_id = c.id
+            LEFT JOIN customers c ON (e.customer_id = c.id OR LOWER(e.customer_email) = LOWER(c.email))
             WHERE m.enquiry_id = $1 
             ORDER BY m.created_at ASC;
         `;
