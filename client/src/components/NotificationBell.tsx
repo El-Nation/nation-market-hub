@@ -168,7 +168,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ userType, us
     fetchNotifications(true);
     const interval = setInterval(() => {
       fetchNotifications(false);
-    }, 5000);
+    }, 20000);
 
     const handleClickOutside = (e: MouseEvent) => {
       if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {

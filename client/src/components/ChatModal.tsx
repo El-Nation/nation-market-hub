@@ -89,7 +89,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
         fetchMessages(true);
         const interval = setInterval(() => {
           fetchMessages(false);
-        }, 3000);
+        }, 15000);
         return () => {
           document.body.style.overflow = '';
           window.removeEventListener('keydown', handleKeyDown);
